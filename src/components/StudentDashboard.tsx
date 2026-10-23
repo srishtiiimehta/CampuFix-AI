@@ -8,7 +8,6 @@ import {
   MapPin, 
   Users,
   Compass,
-  Sparkles,
   Wrench,
   CheckCircle2
 } from 'lucide-react';
@@ -31,7 +30,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const [activeTab, setActiveTab] = useState<'my_tickets' | 'tracked_tickets' | 'all_campus'>('my_tickets');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<TicketCategory | 'All'>('All');
-  const firstName = currentStudentName.trim().split(/\s+/)[0] || 'there';
   const initials = currentStudentName.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'CF';
 
   // Filtered views
@@ -64,93 +62,52 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     <div className="space-y-8">
       {/* Personalized welcome and campus impact */}
       <section className="space-y-4">
-        <div className="relative isolate overflow-hidden rounded-[28px] bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 p-6 text-white shadow-xl shadow-indigo-200/60 sm:p-8">
-          <div aria-hidden="true" className="absolute -right-10 -top-16 -z-10 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
-          <div aria-hidden="true" className="absolute bottom-[-5rem] right-1/3 -z-10 h-48 w-48 rounded-full bg-pink-300/20 blur-3xl" />
-          <div className="flex flex-col justify-between gap-7 sm:flex-row sm:items-center">
-            <div className="max-w-2xl">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold tracking-wide text-white/95 backdrop-blur">
-                <Sparkles className="h-3.5 w-3.5 text-amber-200" />
-                <span>YOUR CAMPUS, YOUR CALL</span>
+        <div className="student-hero">
+          <div className="hero-eyebrow mb-5">CampusFix AI / Your campus, better</div>
+          <div className="relative z-10 flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
+            <div className="max-w-3xl">
+              <h1>YOUR CAMPUS.<br /><span className="hero-accent">LET’S FIX IT.</span></h1>
+              <p className="mt-5">Broken lights? Leaky taps? Wi-Fi having a bad day? Tell us what’s up. We’ll get it to the right team.</p>
+              <div className="mt-7 flex flex-wrap items-center gap-3">
+                <button onClick={onNewComplaint} className="inline-flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide">
+                  <span>Report a problem</span><ArrowRight className="h-4 w-4" />
+                </button>
+                <a href="#campus-issues" className="rounded-full border border-white/35 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10">Explore campus issues ↓</a>
               </div>
-              <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Hey, {firstName}! <span aria-hidden="true">👋</span></h1>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-indigo-50 sm:text-base">
-                Spot something broken? Drop it here. We’ll get it to the right crew so you can get back to your day.
-              </p>
-              <button
-                onClick={onNewComplaint}
-                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-indigo-700 shadow-lg shadow-indigo-950/10 transition hover:-translate-y-0.5 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-indigo-600"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Report a problem</span>
-                <ArrowRight className="h-4 w-4" />
-              </button>
             </div>
-            <div className="flex shrink-0 items-center gap-3 rounded-2xl border border-white/20 bg-white/10 p-3.5 backdrop-blur-md sm:self-start">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-lg font-extrabold text-indigo-700 shadow-sm">{initials}</div>
-              <div>
-                <div className="text-sm font-bold">{currentStudentName || 'Student'}</div>
-                <div className="mt-0.5 text-xs text-indigo-100">CampusFix student</div>
-              </div>
+            <div className="relative z-10 flex shrink-0 items-center gap-3 self-start rounded-2xl border border-white/20 bg-white/10 p-3.5 text-white backdrop-blur-md lg:self-end">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--orange)] text-lg font-extrabold text-[var(--ink)] shadow-sm">{initials}</div>
+              <div><div className="text-sm font-bold">{currentStudentName || 'Student'}</div><div className="mt-0.5 text-xs text-white/70">CampusFix student</div></div>
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 to-white p-4 shadow-sm">
-            <div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wider text-amber-800">In the works</span><span className="rounded-xl bg-amber-100 p-2 text-amber-700"><Wrench className="h-4 w-4" /></span></div>
-            <div className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900">{activeCount}</div>
-            <div className="mt-1 text-xs text-slate-500">Your open or active reports</div>
-          </div>
-          <div className="rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 to-white p-4 shadow-sm">
-            <div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wider text-sky-800">Community mode</span><span className="rounded-xl bg-sky-100 p-2 text-sky-700"><Users className="h-4 w-4" /></span></div>
-            <div className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900">{trackedCount}</div>
-            <div className="mt-1 text-xs text-slate-500">Issues you’re following with others</div>
-          </div>
-          <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-4 shadow-sm">
-            <div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wider text-emerald-800">Fixed up</span><span className="rounded-xl bg-emerald-100 p-2 text-emerald-700"><CheckCircle2 className="h-4 w-4" /></span></div>
-            <div className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900">{resolvedCount}</div>
-            <div className="mt-1 text-xs text-slate-500">Repairs completed for your reports</div>
-          </div>
+          <div className="dashboard-stat"><div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-[.14em] text-slate-600">Open issues</span><span className="rounded-xl bg-amber-100 p-2 text-amber-800"><Wrench className="h-4 w-4" /></span></div><div className="stat-number mt-4">{activeCount}</div><div className="mt-2 text-xs text-slate-500">Your open or active reports</div></div>
+          <div className="dashboard-stat"><div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-[.14em] text-slate-600">Issues you follow</span><span className="rounded-xl bg-sky-100 p-2 text-sky-800"><Users className="h-4 w-4" /></span></div><div className="stat-number mt-4">{trackedCount}</div><div className="mt-2 text-xs text-slate-500">Issues you’re following with others</div></div>
+          <div className="dashboard-stat"><div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-[.14em] text-slate-600">Repairs completed</span><span className="rounded-xl bg-emerald-100 p-2 text-emerald-800"><CheckCircle2 className="h-4 w-4" /></span></div><div className="stat-number mt-4">{resolvedCount}</div><div className="mt-2 text-xs text-slate-500">Repairs completed for your reports</div></div>
         </div>
       </section>
 
-      {/* 4 Allowed Categories Reference strip */}
-      <div className="bg-slate-900 text-white rounded-xl p-5 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-          <div>
-            <h2 className="text-sm font-semibold text-teal-300">What can we fix? Pick a lane</h2>
-            <p className="text-xs text-slate-300 mt-0.5">
-              We route each report to the campus team that can sort it out:
-            </p>
-          </div>
-          <span className="text-xs text-teal-400 font-mono">Straight to the right crew ✨</span>
+      <section id="campus-issues" className="category-showcase space-y-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div><div className="mb-2 text-[10px] font-bold uppercase tracking-[.18em] text-[var(--orange)]">The campus fix list</div><h2>WHAT’S GOING ON?</h2><p className="mt-2 text-sm text-white/70">Pick a lane to see matching campus reports.</p></div>
+          <span className="text-xs font-mono text-white/60">4 teams · one better campus</span>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="p-3 rounded-lg bg-slate-800/80 border border-slate-700/80">
-            <div className="text-xs font-semibold text-teal-400">1. Plumbing</div>
-            <div className="text-xs text-slate-300 mt-1 font-mono">Plumbing / Water Maint.</div>
-            <div className="text-[11px] text-slate-400 mt-1">Leaks, low pressure, drainage, sinks, toilets</div>
-          </div>
-          <div className="p-3 rounded-lg bg-slate-800/80 border border-slate-700/80">
-            <div className="text-xs font-semibold text-amber-400">2. Electricity</div>
-            <div className="text-xs text-slate-300 mt-1 font-mono">Electrical Maintenance</div>
-            <div className="text-[11px] text-slate-400 mt-1">Outlets, lighting fixtures, buzzing, breakers</div>
-          </div>
-          <div className="p-3 rounded-lg bg-slate-800/80 border border-slate-700/80">
-            <div className="text-xs font-semibold text-emerald-400">3. Cleanliness</div>
-            <div className="text-xs text-slate-300 mt-1 font-mono">Housekeeping / Sanitation</div>
-            <div className="text-[11px] text-slate-400 mt-1">Spills, trash overflow, restroom sanitizing</div>
-          </div>
-          <div className="p-3 rounded-lg bg-slate-800/80 border border-slate-700/80">
-            <div className="text-xs font-semibold text-sky-400">4. Internet Connectivity</div>
-            <div className="text-xs text-slate-300 mt-1 font-mono">IT / Network Support</div>
-            <div className="text-[11px] text-slate-400 mt-1">Eduroam wifi, latency, drops, ethernet ports</div>
-          </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {([
+            { category: 'Plumbing', title: 'Water problems', icon: '↘', description: 'Leaks, taps, drains & more', tone: 'text-sky-200' },
+            { category: 'Electricity', title: 'Lights & power', icon: 'ϟ', description: 'Flickers, outlets, buzzing', tone: 'text-amber-200' },
+            { category: 'Cleanliness', title: 'Cleaning & spills', icon: '✳', description: 'Spills, bins, shared spaces', tone: 'text-emerald-200' },
+            { category: 'Internet Connectivity', title: 'Wi-Fi & internet', icon: '⌁', description: 'Dead zones, drops, slow Wi-Fi', tone: 'text-violet-200' },
+          ] as const).map((item, index) => (
+            <button key={item.category} type="button" onClick={() => { setSelectedCategory(item.category); setActiveTab('all_campus'); }} className="category-tile group text-left text-white focus-visible:outline-offset-4">
+              <div className="flex items-start justify-between"><span className="category-number">0{index + 1}</span><span aria-hidden="true" className={`text-4xl leading-none ${item.tone} transition-transform group-hover:-translate-y-1 group-hover:rotate-12`}>{item.icon}</span></div>
+              <div className="mt-5 text-base font-extrabold">{item.title}</div><p className="mt-1 text-xs text-white/65">{item.description}</p>
+            </button>
+          ))}
         </div>
-      </div>
-
+      </section>
       {/* Ticket List Section with Segmented Tabs and Filters */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -332,3 +289,5 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     </div>
   );
 };
+
+

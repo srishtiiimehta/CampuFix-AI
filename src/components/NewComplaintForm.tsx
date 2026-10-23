@@ -118,13 +118,13 @@ export const NewComplaintForm: React.FC<NewComplaintFormProps> = ({
         <div className="flex items-center gap-2 text-xs font-semibold text-teal-700 uppercase tracking-wider">
           <span>Step 1 of 4</span>
           <span aria-hidden="true">·</span>
-          <span>Student Maintenance Intake</span>
+          <span>Your campus, better</span>
         </div>
         <h1 className="text-xl md:text-2xl font-bold text-slate-900 mt-1">
-          Report a Campus Maintenance Problem
+          Okay, what’s broken?
         </h1>
         <p className="text-xs md:text-sm text-slate-500 mt-1">
-          Describe what you see in everyday language. Gemini AI interprets informal complaints, spots visual defects, and checks whether essential details like building and room are present.
+          Tell us what’s going on in your own words. CampusFix AI will help route it to the right team.
         </p>
 
         {/* 4 Allowed Categories Banner */}
@@ -305,3 +305,4 @@ export const NewComplaintForm: React.FC<NewComplaintFormProps> = ({
     </div>
   );
 };
+
