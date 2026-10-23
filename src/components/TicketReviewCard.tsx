@@ -31,6 +31,9 @@ interface TicketReviewCardProps {
     aiInferences: string[];
     isSafetyHazard: boolean;
     safetyWarning?: string;
+    requiresHumanReview?: boolean;
+    analysisSource?: 'gemini' | 'fallback';
+    fallbackReason?: string;
   }) => void;
   isCheckingDuplicates: boolean;
   onBackToEdit: () => void;
@@ -60,6 +63,9 @@ export const TicketReviewCard: React.FC<TicketReviewCardProps> = ({
       aiInferences: analysis.aiInferences,
       isSafetyHazard: analysis.isSafetyHazard,
       safetyWarning: analysis.safetyWarning,
+      requiresHumanReview: analysis.analysisSource === 'fallback' ? true : analysis.requiresHumanReview,
+      analysisSource: analysis.analysisSource,
+      fallbackReason: analysis.fallbackReason,
     });
   };
 
@@ -80,7 +86,9 @@ export const TicketReviewCard: React.FC<TicketReviewCardProps> = ({
               Verify Ticket Details
             </h1>
             <p className="text-xs md:text-sm text-slate-500 mt-1">
-              Gemini has structured your informal complaint into an official university work order. Review the categorized information and observations below before checking for duplicates.
+              {analysis.analysisSource === 'fallback'
+                ? 'Your complaint was structured using campus facility triage rules. Review the categorized information and observations below.'
+                : 'Gemini has structured your informal complaint into an official university work order. Review the categorized information and observations below.'}
             </p>
           </div>
 
@@ -99,12 +107,18 @@ export const TicketReviewCard: React.FC<TicketReviewCardProps> = ({
         {/* Ticket Title Banner */}
         <div className="bg-slate-900 text-white p-6 border-b border-slate-800">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-mono text-teal-400 bg-teal-950/80 px-2 py-0.5 rounded border border-teal-800">
                 PROPOSED TICKET
               </span>
               <span className="text-xs text-slate-400">· Status:</span>
               <span className="text-xs font-semibold text-amber-400">Open (Draft)</span>
+              {analysis.analysisSource === 'fallback' && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-200 bg-amber-950/90 px-2.5 py-0.5 rounded border border-amber-600">
+                  <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                  <span>Basic analysis mode: AI unavailable</span>
+                </span>
+              )}
             </div>
             <div className="text-xs font-mono text-slate-400">
               Generated: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -290,7 +304,7 @@ export const TicketReviewCard: React.FC<TicketReviewCardProps> = ({
             )}
 
             {/* 3. Urgent Human Review Flag */}
-            {analysis.requiresHumanReview && !analysis.isSafetyHazard && (
+            {analysis.requiresHumanReview && !analysis.isSafetyHazard && analysis.analysisSource !== 'fallback' && (
               <div className="flex items-start gap-2.5 p-3 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs leading-relaxed">
                 <AlertCircle className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
                 <div>
@@ -300,7 +314,18 @@ export const TicketReviewCard: React.FC<TicketReviewCardProps> = ({
               </div>
             )}
 
-            {/* 4. Human Facility Review Standard Notice */}
+            {/* 4. Basic Analysis Mode Notice */}
+            {analysis.analysisSource === 'fallback' && (
+              <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-50 border border-amber-300 text-amber-900 text-xs leading-relaxed">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold text-amber-950">Basic Analysis Mode Active: </span>
+                  Automated visual and AI diagnostics are offline ({analysis.fallbackReason || 'AI service unavailable'}). A facilities technician review is mandatory prior to dispatch.
+                </div>
+              </div>
+            )}
+
+            {/* 5. Human Facility Review Standard Notice */}
             <div className="flex items-start gap-2.5 p-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-xs leading-relaxed">
               <ShieldAlert className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
               <div>

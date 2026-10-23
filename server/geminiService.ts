@@ -20,6 +20,13 @@ const ai = new GoogleGenAI({
   },
 });
 
+// Configurable model list from env (GEMINI_MODELS) with sensible defaults from Google Gemini API docs
+export const GEMINI_MODELS: string[] = process.env.GEMINI_MODELS
+  ? process.env.GEMINI_MODELS.split(',').map((m) => m.trim()).filter(Boolean)
+  : ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
+
+console.log(`[CampusFix AI] Configured Gemini models: ${GEMINI_MODELS.join(', ')}`);
+
 const SYSTEM_INSTRUCTION = `You are CampusFix AI, the intelligent facility maintenance diagnostic system for a university campus.
 Your mission is to parse, analyze, and structure informal student maintenance complaints and optional defect photos into actionable campus work orders.
 
@@ -84,7 +91,13 @@ export async function analyzeStudentComplaint(
 
   // If no Gemini key is configured or is a placeholder, run our robust facility fallback engine
   if (!currentApiKey || currentApiKey === 'MY_GEMINI_API_KEY') {
-    return generateLocalFallbackAnalysis(complaintText, imageData, conversationHistory, validLocations);
+    return generateLocalFallbackAnalysis(
+      complaintText,
+      imageData,
+      conversationHistory,
+      validLocations,
+      'Gemini API key is not configured'
+    );
   }
 
   try {
@@ -255,12 +268,20 @@ Examine both the message text and any attached photograph. Structure the output 
     return validateAndSanitizeAnalysisResult(parsed, complaintText, conversationHistory, validLocations);
   } catch (error: any) {
     console.warn('[CampusFix AI] Gemini API call failed or timed out. Falling back to local diagnostic processor:', error?.message || error);
-    return generateLocalFallbackAnalysis(complaintText, imageData, conversationHistory, validLocations);
+    return generateLocalFallbackAnalysis(
+      complaintText,
+      imageData,
+      conversationHistory,
+      validLocations,
+      error?.message || 'Gemini API call timed out or failed'
+    );
   }
 }
 
 async function callGeminiWithModelFallback(params: any): Promise<any> {
-  const models = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
+  const models = GEMINI_MODELS.length > 0
+    ? GEMINI_MODELS
+    : ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
   let lastError: any = null;
 
   for (const model of models) {
@@ -463,6 +484,8 @@ function validateAndSanitizeAnalysisResult(
     aiInferences,
     isSafetyHazard,
     safetyWarning,
+    analysisSource: 'gemini',
+    fallbackReason: undefined,
   };
 }
 
@@ -470,11 +493,12 @@ function validateAndSanitizeAnalysisResult(
  * Intelligent local fallback analyzer adhering strictly to the 18 processing rules
  * when Gemini API key is absent or when network connection is unavailable.
  */
-function generateLocalFallbackAnalysis(
+export function generateLocalFallbackAnalysis(
   text: string,
   image?: { base64: string; mimeType: string } | null,
   conversationHistory: { role: string; content: string }[] = [],
-  validLocations?: string[]
+  validLocations?: string[],
+  fallbackReason: string = 'AI service unavailable; processed via rule-based facilities triage engine'
 ): AnalysisResult {
   const combined = `${text} ${conversationHistory.map((m) => m.content).join(' ')}`.toLowerCase();
 
@@ -482,79 +506,43 @@ function generateLocalFallbackAnalysis(
   let priority: TicketPriority = 'Medium';
   let isHazard = false;
   let safetyWarning: string | undefined = undefined;
-  let requiresHumanReview = false;
 
-  // Category identification based on physical campus domains
-  if (
-    combined.includes('wifi') ||
-    combined.includes('wi-fi') ||
-    combined.includes('internet') ||
-    combined.includes('eduroam') ||
-    combined.includes('ethernet') ||
-    combined.includes('network') ||
-    combined.includes('disconnect') ||
-    combined.includes('latency') ||
-    combined.includes('router')
-  ) {
+  // Category identification based on physical campus domains (using word boundaries to prevent substring false positives, e.g. "cabinet" matching "bin")
+  const isInternet = /\b(wifi|wi-fi|internet|eduroam|ethernet|network|disconnect|disconnecting|disconnected|latency|router|routers|ssid)\b/i.test(combined);
+  const isElectricity = /\b(spark|sparks|wire|wires|wiring|electric|electrical|electricity|fan|fans|switch|switches|light|lights|bulb|bulbs|outlet|outlets|socket|sockets|breaker|breakers|short circuit)\b/i.test(combined);
+  const isCleanliness = /\b(bin|bins|trash|garbage|rubbish|overflowing|spill|spills|spilled|clean|cleaning|cleanliness|dirty|smell|stink|odor|odors|waste|litter|pest|pests)\b/i.test(combined);
+  const isPlumbing = /\b(tap|taps|leak|leaks|leaking|leakage|pipe|pipes|sink|sinks|faucet|faucets|toilet|toilets|water|drain|drains|drainage|flush|flushing|flood|flooding|burst pipe)\b/i.test(combined);
+
+  if (isInternet) {
     category = 'Internet Connectivity';
     priority = 'Medium';
-  } else if (
-    combined.includes('spark') ||
-    combined.includes('wire') ||
-    combined.includes('electric') ||
-    combined.includes('fan') ||
-    combined.includes('switch') ||
-    combined.includes('light') ||
-    combined.includes('bulb') ||
-    combined.includes('outlet') ||
-    combined.includes('socket') ||
-    combined.includes('breaker') ||
-    combined.includes('power')
-  ) {
+  } else if (isElectricity) {
     category = 'Electricity';
-    if (combined.includes('spark') || combined.includes('smoke') || combined.includes('shock') || combined.includes('fire')) {
+    if (/\b(spark|sparks|smoke|smoking|shock|shocks|fire|burning|exposed wire)\b/i.test(combined)) {
       priority = 'Critical';
       isHazard = true;
-      requiresHumanReview = true;
       safetyWarning = 'Active sparking or electrical hazard reported. Urgent physical inspection needed.';
     }
-  } else if (
-    combined.includes('bin') ||
-    combined.includes('trash') ||
-    combined.includes('overflowing') ||
-    combined.includes('garbage') ||
-    combined.includes('spill') ||
-    combined.includes('clean') ||
-    combined.includes('dirty') ||
-    combined.includes('smell') ||
-    combined.includes('waste')
-  ) {
+  } else if (isCleanliness && !isPlumbing) {
     category = 'Cleanliness';
-    if (combined.includes('glass') || combined.includes('overflowing')) {
+    if (/\b(glass|overflowing)\b/i.test(combined)) {
       priority = 'High';
     }
-  } else if (
-    combined.includes('tap') ||
-    combined.includes('leak') ||
-    combined.includes('pipe') ||
-    combined.includes('sink') ||
-    combined.includes('faucet') ||
-    combined.includes('toilet') ||
-    combined.includes('water') ||
-    combined.includes('drain') ||
-    combined.includes('flush')
-  ) {
+  } else if (isPlumbing) {
     category = 'Plumbing';
-    if (combined.includes('flood') || combined.includes('burst')) {
+    if (/\b(flood|flooding|burst)\b/i.test(combined)) {
       priority = 'Critical';
       isHazard = true;
-      requiresHumanReview = true;
       safetyWarning = 'Active flooding or burst pipe. Shutoff valve inspection required.';
+    }
+  } else if (isCleanliness) {
+    category = 'Cleanliness';
+    if (/\b(glass|overflowing)\b/i.test(combined)) {
+      priority = 'High';
     }
   } else {
     // Unclassified issue outside standard 4 categories
     category = 'Plumbing';
-    requiresHumanReview = true;
   }
 
   // Location extraction heuristics
@@ -572,7 +560,6 @@ function generateLocalFallbackAnalysis(
   let missingInformation = '';
 
   if (isVague) {
-    requiresHumanReview = true;
     clarificationQuestion = 'Could you please describe what specific item is broken and where on campus it is located?';
     missingInformation = 'Specific maintenance defect and location are not provided.';
   } else if (!reportedLocation && text.length < 25) {
@@ -587,21 +574,21 @@ function generateLocalFallbackAnalysis(
 
   const studentProvidedFacts = [text.trim()];
 
+  // In fallback mode: never fabricate image observations.
+  // When an image is attached, imageObservations is empty and visualObservations contains only:
+  // "Photo attached; automated visual analysis unavailable. Technician review required."
   const visualObservations: string[] = [];
-  let imageObservations = '';
-  if (image) {
-    imageObservations = 'Photograph attached. Visual evidence shows equipment/surface consistent with reported symptom.';
-    visualObservations.push('Visual evidence submitted with work order for maintenance technician review.');
-    visualObservations.push('Note: Visual inspection does not conclusively verify internal mechanical or electrical cause.');
+  const imageObservations = '';
+  if (image && image.base64) {
+    visualObservations.push('Photo attached; automated visual analysis unavailable. Technician review required.');
   }
 
   const aiInferences = [
-    `Assigned to ${assignedDepartment} based on symptom characteristics.`,
+    `Assigned to ${assignedDepartment} based on facility triage rules.`,
     `Assessed priority: ${priority}.`,
+    `Diagnostic engine status: ${fallbackReason}.`,
+    'Requires human facility supervisor review before dispatch.',
   ];
-  if (requiresHumanReview) {
-    aiInferences.push('Requires human facility review.');
-  }
 
   return {
     category,
@@ -613,7 +600,8 @@ function generateLocalFallbackAnalysis(
     imageObservations,
     missingInformation,
     clarificationQuestion,
-    requiresHumanReview,
+    // Forced human review in fallback mode
+    requiresHumanReview: true,
     isMissingEssentialInfo,
     missingFields,
     studentProvidedFacts,
@@ -621,6 +609,8 @@ function generateLocalFallbackAnalysis(
     aiInferences,
     isSafetyHazard: isHazard,
     safetyWarning,
+    analysisSource: 'fallback',
+    fallbackReason,
   };
 }
 

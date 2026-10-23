@@ -94,6 +94,8 @@ export interface AnalysisResult {
   aiInferences: string[];
   isSafetyHazard: boolean;
   safetyWarning?: string;
+  analysisSource: 'gemini' | 'fallback';
+  fallbackReason?: string;
 }
 
 export interface DuplicateMatch {
