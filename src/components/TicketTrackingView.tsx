@@ -261,16 +261,42 @@ export const TicketTrackingView: React.FC<TicketTrackingViewProps> = ({
             </div>
           )}
 
-          {/* Tracked by other students */}
-          {ticket.trackedBy && ticket.trackedBy.length > 1 && (
-            <div className="p-3.5 rounded-lg bg-slate-100/70 border border-slate-200 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2 text-slate-700">
-                <Users className="w-4 h-4 text-slate-500" />
-                <span className="font-semibold">
-                  {ticket.trackedBy.length} Students Tracking This Issue
+          {/* Tracked by other students & consolidated reports */}
+          {((ticket.associatedReportCount && ticket.associatedReportCount > 1) || (ticket.trackedBy && ticket.trackedBy.length > 1)) && (
+            <div className="p-4 rounded-lg bg-teal-50/70 border border-teal-200/90 text-xs space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-teal-950 font-bold">
+                  <Users className="w-4 h-4 text-teal-700" />
+                  <span>
+                    Consolidated Work Order: {ticket.associatedReportCount || ticket.trackedBy.length} Student Reports Linked
+                  </span>
+                </div>
+                <span className="text-teal-700 font-mono text-[11px] bg-teal-100/80 px-2 py-0.5 rounded border border-teal-200">
+                  {ticket.trackedBy?.length || 1} followers
                 </span>
               </div>
-              <span className="text-slate-400 font-mono text-[11px]">Consolidated Single Work Order</span>
+              <p className="text-[11px] text-teal-900 leading-relaxed">
+                When students report matching issues in this location, CampusFix AI links them to this work order to prevent duplicate contractor dispatches while keeping all reporting students automatically updated.
+              </p>
+
+              {ticket.associatedReports && ticket.associatedReports.length > 0 && (
+                <div className="pt-2 border-t border-teal-200/60 space-y-1.5">
+                  <div className="text-[11px] font-bold text-teal-950 uppercase tracking-wider">
+                    Associated Reports:
+                  </div>
+                  {ticket.associatedReports.map((ar) => (
+                    <div key={ar.associationId} className="flex items-center justify-between text-[11px] text-teal-900 bg-white/70 p-2 rounded border border-teal-100">
+                      <div>
+                        <span className="font-semibold text-slate-900">{ar.studentName}: </span>
+                        <span>{ar.note || 'Subscribed to tracking updates.'}</span>
+                      </div>
+                      <span className="text-slate-400 font-mono text-[10px] shrink-0 ml-2">
+                        {new Date(ar.timestamp).toLocaleDateString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

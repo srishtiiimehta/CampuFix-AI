@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isStaff() {
+      return isSignedIn() && exists(/databases/$(database)/documents/staffUsers/$(request.auth.uid));
+    }
+
+    function isOwner(reporterId) {
+      return isSignedIn() && request.auth.uid == reporterId;
+    }
+
+    function isTrackedBy(trackedByList) {
+      return isSignedIn() && (request.auth.uid in trackedByList);
+    }
+
+    // Tickets Collection
+    match /tickets/{ticketId} {
+      // Students can view only tickets and linked reports they are authorized to follow
+      // Staff can view all campus tickets
+      allow get: if isStaff() || isOwner(resource.data.reporterId) || isTrackedBy(resource.data.trackedBy);
+      allow list: if isStaff() || (isSignedIn() && (resource.data.reporterId == request.auth.uid || request.auth.uid in resource.data.trackedBy));
+
+      // Student can create ticket
+      allow create: if isSignedIn() 
+        && request.resource.data.category in ['Plumbing', 'Electricity', 'Cleanliness', 'Internet Connectivity']
+        && request.resource.data.status == 'Open'
+        && request.resource.data.reporterId == request.auth.uid;
+
+      // Only authorized staff can change assignments, statuses, and resolution notes
+      allow update: if isStaff() 
+        && request.resource.data.category in ['Plumbing', 'Electricity', 'Cleanliness', 'Internet Connectivity']
+        && request.resource.data.status in ['Open', 'In Progress', 'Resolved']
+        && (request.resource.data.status != 'Resolved' || (request.resource.data.resolutionNotes is string && request.resource.data.resolutionNotes.size() >= 5));
+
+      allow delete: if false;
+    }
+
+    // Duplicate Report Associations
+    match /duplicateAssociations/{associationId} {
+      allow read: if isStaff() || (isSignedIn() && resource.data.reporterId == request.auth.uid);
+      allow create: if isSignedIn() && request.resource.data.reporterId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // Users & Departments
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isStaff();
+    }
+
+    match /departments/{deptId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+  }
+}

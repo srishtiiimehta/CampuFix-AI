@@ -1,5 +1,105 @@
 [
   {
+    "ticketId": "TKT-2026-1427",
+    "reporterId": "stu_alex_c",
+    "reporterName": "Alex Chen (Sophomore)",
+    "reporterRole": "student",
+    "category": "Plumbing",
+    "assignedDepartment": "Plumbing / Water Maintenance",
+    "issueSummary": "Water fountain on 1st floor has weak water pressure",
+    "reportedLocation": "Main Library 1st Floor Hallway",
+    "reportedTime": "2026-10-23T11:30:16.096Z",
+    "priority": "Low",
+    "imageObservations": "",
+    "studentProvidedFacts": [
+      "Water fountain on 1st floor has weak water pressure"
+    ],
+    "visualObservations": [],
+    "aiInferences": [],
+    "missingInformation": "",
+    "status": "Open",
+    "createdAt": "2026-10-23T11:30:16.096Z",
+    "updatedAt": "2026-10-23T11:30:16.096Z",
+    "statusHistory": [
+      {
+        "id": "hist-1792755016096-ejfe",
+        "timestamp": "2026-10-23T11:30:16.096Z",
+        "status": "Open",
+        "updatedBy": "Alex Chen (Sophomore)",
+        "role": "student",
+        "notes": "Initial ticket generated and submitted via CampusFix AI."
+      }
+    ],
+    "trackedBy": [
+      "stu_alex_c"
+    ],
+    "associatedReportCount": 1,
+    "associatedReports": [],
+    "isSafetyHazard": false,
+    "isDemo": false,
+    "notesThread": []
+  },
+  {
+    "ticketId": "TKT-2026-8298",
+    "reporterId": "stu_alex_c",
+    "reporterName": "Alex Chen (Sophomore)",
+    "reporterRole": "student",
+    "category": "Internet Connectivity",
+    "assignedDepartment": "IT / Network Support",
+    "issueSummary": "Ethernet jack in Room 305 has damaged pin and cannot connect",
+    "reportedLocation": "Engineering Hall, 3rd Floor, Room 305",
+    "reportedTime": "2026-10-23T11:29:23.042Z",
+    "priority": "Medium",
+    "imageObservations": "",
+    "studentProvidedFacts": [
+      "Ethernet port physical pin bent"
+    ],
+    "visualObservations": [],
+    "aiInferences": [
+      "Hardware replacement of wall faceplate required"
+    ],
+    "missingInformation": "",
+    "status": "Resolved",
+    "createdAt": "2026-10-23T11:29:23.042Z",
+    "updatedAt": "2026-10-23T11:29:39.869Z",
+    "statusHistory": [
+      {
+        "id": "hist-1792754963042-g2s5",
+        "timestamp": "2026-10-23T11:29:23.042Z",
+        "status": "Open",
+        "updatedBy": "Alex Chen (Sophomore)",
+        "role": "student",
+        "notes": "Ticket submitted as separate issue (flagged relative to ticket TKT-DEMO-001)."
+      },
+      {
+        "id": "hist-1792754971584-jofp",
+        "timestamp": "2026-10-23T11:29:31.584Z",
+        "status": "In Progress",
+        "updatedBy": "Marcus Vance (Facilities Lead)",
+        "role": "staff",
+        "notes": "Network technician dispatched to inspect physical RJ45 faceplate"
+      },
+      {
+        "id": "hist-1792754979869-8t1g",
+        "timestamp": "2026-10-23T11:29:39.869Z",
+        "status": "Resolved",
+        "updatedBy": "Marcus Vance (Facilities Lead)",
+        "role": "staff",
+        "notes": "Work completed and certified by network engineering."
+      }
+    ],
+    "relatedTicketId": "TKT-DEMO-001",
+    "trackedBy": [
+      "stu_alex_c"
+    ],
+    "associatedReportCount": 1,
+    "associatedReports": [],
+    "isSafetyHazard": false,
+    "isDemo": false,
+    "notesThread": [],
+    "resolutionNotes": "Replaced damaged Keystone RJ-45 wall jack, punch-down terminated Cat6 lines, and certified 1Gbps link with Fluke network tester."
+  },
+  {
     "ticketId": "TKT-DEMO-001",
     "reporterId": "stu_sarah_m",
     "reporterName": "Sarah Miller (Sophomore)",
@@ -27,7 +127,7 @@
     "missingInformation": "",
     "status": "In Progress",
     "createdAt": "2026-10-23T03:25:58.943Z",
-    "updatedAt": "2026-10-23T06:25:58.943Z",
+    "updatedAt": "2026-10-23T11:29:09.261Z",
     "statusHistory": [
       {
         "id": "hist-001-1",
@@ -44,12 +144,21 @@
         "updatedBy": "David Kim (IT Network Admin)",
         "role": "staff",
         "notes": "Dispatched network diagnostics team. Access point AP-LIB-2E power-cycled. Scheduled PoE switch replacement."
+      },
+      {
+        "id": "hist-1792754949261-9pj7",
+        "timestamp": "2026-10-23T11:29:09.261Z",
+        "status": "In Progress",
+        "updatedBy": "Alex Chen (Sophomore)",
+        "role": "student",
+        "notes": "Student Alex Chen experiencing same wifi disconnection at library desk 12."
       }
     ],
     "trackedBy": [
       "stu_sarah_m",
       "stu_alex_k",
-      "stu_priya_r"
+      "stu_priya_r",
+      "stu_alex_c"
     ],
     "notesThread": [
       {
@@ -61,7 +170,17 @@
       }
     ],
     "isSafetyHazard": false,
-    "isDemo": true
+    "isDemo": true,
+    "associatedReportCount": 4,
+    "associatedReports": [
+      {
+        "associationId": "assoc-1792754949261-a9h4",
+        "studentId": "stu_alex_c",
+        "studentName": "Alex Chen (Sophomore)",
+        "note": "Student Alex Chen experiencing same wifi disconnection at library desk 12.",
+        "timestamp": "2026-10-23T11:29:09.261Z"
+      }
+    ]
   },
   {
     "ticketId": "TKT-DEMO-002",
@@ -124,7 +243,9 @@
     ],
     "isSafetyHazard": true,
     "safetyWarning": "Water accumulation within 1 meter of 120V electrical conduit. Power breaker isolated by facilities.",
-    "isDemo": true
+    "isDemo": true,
+    "associatedReportCount": 2,
+    "associatedReports": []
   },
   {
     "ticketId": "TKT-DEMO-003",
@@ -168,7 +289,9 @@
     ],
     "notesThread": [],
     "isSafetyHazard": false,
-    "isDemo": true
+    "isDemo": true,
+    "associatedReportCount": 1,
+    "associatedReports": []
   },
   {
     "ticketId": "TKT-DEMO-004",
@@ -236,6 +359,8 @@
       }
     ],
     "isSafetyHazard": false,
-    "isDemo": true
+    "isDemo": true,
+    "associatedReportCount": 1,
+    "associatedReports": []
   }
 ]

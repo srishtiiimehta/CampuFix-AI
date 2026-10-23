@@ -177,7 +177,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              All Campus Issues ({tickets.length})
+              All Authorized Issues ({tickets.length})
             </button>
           </div>
 
@@ -266,10 +266,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
                   {/* Date & Tracked badge */}
                   <div className="flex items-center gap-2 text-xs text-slate-400 font-mono">
-                    {ticket.trackedBy && ticket.trackedBy.length > 1 && (
-                      <span className="inline-flex items-center gap-1 text-slate-500 font-medium bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
-                        <Users className="w-3 h-3 text-slate-400" />
-                        <span>{ticket.trackedBy.length} students tracking</span>
+                    {((ticket.associatedReportCount && ticket.associatedReportCount > 1) || (ticket.trackedBy && ticket.trackedBy.length > 1)) && (
+                      <span className="inline-flex items-center gap-1 text-slate-600 font-medium bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                        <Users className="w-3 h-3 text-slate-500" />
+                        <span>{ticket.associatedReportCount || ticket.trackedBy?.length} reports consolidated</span>
                       </span>
                     )}
                     <span>{new Date(ticket.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
