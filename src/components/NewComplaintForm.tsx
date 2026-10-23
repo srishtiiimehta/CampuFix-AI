@@ -165,22 +165,31 @@ export const NewComplaintForm: React.FC<NewComplaintFormProps> = ({
 
       {/* Main Submission Form */}
       <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
+        {/* Clear Instructions Callout */}
+        <div className="p-3.5 rounded-lg bg-teal-50/70 border border-teal-200 text-xs text-teal-900 flex items-start gap-2.5">
+          <Info className="w-4 h-4 text-teal-700 shrink-0 mt-0.5" />
+          <div className="leading-relaxed">
+            <span className="font-semibold text-teal-950">Describe in your own words: </span>
+            You do not need facility work-order codes or maintenance terminology. Type naturally (e.g. <em>"water gushing under sink 204"</em>, <em>"wifi keeps disconnecting in east library pods"</em>, or <em>"hall lights buzzing and flashing"</em>). Gemini extracts the symptoms, location, and severity automatically.
+          </div>
+        </div>
+
         {/* Text Input */}
         <div>
           <label htmlFor="complaint-text" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-            What is the problem? <span className="text-rose-500">*</span>
+            Describe the problem <span className="text-rose-500">*</span>
           </label>
           <textarea
             id="complaint-text"
-            rows={4}
+            rows={5}
             value={complaintText}
             onChange={(e) => setComplaintText(e.target.value)}
-            placeholder="E.g., Water is leaking fast from under the 2nd floor restroom sink in Johnson Hall, or wifi keeps dropping in the library east wing..."
-            className="w-full p-3.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm text-slate-900 placeholder-slate-400 leading-relaxed"
+            placeholder="Type your informal complaint here... e.g., Water is dripping fast from the ceiling right in front of room 302 in the Science Complex, forming a puddle on the walkway..."
+            className="w-full p-4 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm text-slate-900 placeholder-slate-400 leading-relaxed transition-colors"
           />
           <div className="flex items-center justify-between mt-1.5 text-xs text-slate-400">
-            <span>Informal language, abbreviations, and typos are automatically understood.</span>
-            <span>{complaintText.length} characters</span>
+            <span>Everyday descriptions, typos, and voice-to-text are understood automatically.</span>
+            <span className="font-mono">{complaintText.length} characters</span>
           </div>
         </div>
 

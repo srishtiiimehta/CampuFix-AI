@@ -1,4 +1,4 @@
-import { Ticket } from '../src/types/ticket';
+import type { Ticket } from '../src/types/ticket.ts';
 
 export const INITIAL_DEMO_TICKETS: Ticket[] = [
   {

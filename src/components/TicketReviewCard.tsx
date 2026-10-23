@@ -13,7 +13,8 @@ import {
   FileText,
   Camera,
   Cpu,
-  ShieldAlert
+  ShieldAlert,
+  AlertTriangle
 } from 'lucide-react';
 
 interface TicketReviewCardProps {
@@ -269,10 +270,33 @@ export const TicketReviewCard: React.FC<TicketReviewCardProps> = ({
             </ul>
           </div>
 
-          {/* Safety Warning */}
-          {analysis.isSafetyHazard && (
-            <HazardNotice warning={analysis.safetyWarning} />
-          )}
+          {/* Uncertainty & Human Review Warnings Section */}
+          <div className="space-y-3 pt-2">
+            {/* 1. Location Specificity Warning */}
+            {(!location || location.trim().length < 8 || !/\d/.test(location)) && (
+              <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs leading-relaxed">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold text-amber-950">Location Review Warning: </span>
+                  Specific room, floor, or pod number is missing or uncertain. Campus maintenance crews will require visual walkthrough verification on site. You can click <strong>Edit Fields</strong> above to refine the room number.
+                </div>
+              </div>
+            )}
+
+            {/* 2. Safety Risk Warning */}
+            {analysis.isSafetyHazard && (
+              <HazardNotice warning={analysis.safetyWarning} />
+            )}
+
+            {/* 3. Human Review Notice */}
+            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-xs leading-relaxed">
+              <ShieldAlert className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-semibold text-slate-900">Human Facility Review: </span>
+                All AI-generated work order classifications, department dispatches ({assignedDept}), and priority levels ({priority}) are reviewed and confirmed by University Facilities supervisors prior to technician dispatch.
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Action Controls */}

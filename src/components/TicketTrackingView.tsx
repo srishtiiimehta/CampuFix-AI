@@ -87,9 +87,13 @@ export const TicketTrackingView: React.FC<TicketTrackingViewProps> = ({
                 {ticket.ticketId}
               </span>
 
-              {ticket.isDemo && (
+              {ticket.isDemo ? (
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-teal-300 border border-slate-700">
                   DEMO RECORD
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-950 text-teal-300 border border-teal-700">
+                  LIVE WORK ORDER
                 </span>
               )}
 
@@ -261,45 +265,93 @@ export const TicketTrackingView: React.FC<TicketTrackingViewProps> = ({
             </div>
           )}
 
-          {/* Tracked by other students & consolidated reports */}
-          {((ticket.associatedReportCount && ticket.associatedReportCount > 1) || (ticket.trackedBy && ticket.trackedBy.length > 1)) && (
-            <div className="p-4 rounded-lg bg-teal-50/70 border border-teal-200/90 text-xs space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-teal-950 font-bold">
-                  <Users className="w-4 h-4 text-teal-700" />
-                  <span>
-                    Consolidated Work Order: {ticket.associatedReportCount || ticket.trackedBy.length} Student Reports Linked
-                  </span>
-                </div>
-                <span className="text-teal-700 font-mono text-[11px] bg-teal-100/80 px-2 py-0.5 rounded border border-teal-200">
-                  {ticket.trackedBy?.length || 1} followers
+          {/* Tracked by other students */}
+          {ticket.trackedBy && ticket.trackedBy.length > 1 && (
+            <div className="p-3.5 rounded-lg bg-slate-100/70 border border-slate-200 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2 text-slate-700">
+                <Users className="w-4 h-4 text-slate-500" />
+                <span className="font-semibold">
+                  {ticket.trackedBy.length} Students Tracking This Issue
                 </span>
               </div>
-              <p className="text-[11px] text-teal-900 leading-relaxed">
-                When students report matching issues in this location, CampusFix AI links them to this work order to prevent duplicate contractor dispatches while keeping all reporting students automatically updated.
-              </p>
-
-              {ticket.associatedReports && ticket.associatedReports.length > 0 && (
-                <div className="pt-2 border-t border-teal-200/60 space-y-1.5">
-                  <div className="text-[11px] font-bold text-teal-950 uppercase tracking-wider">
-                    Associated Reports:
-                  </div>
-                  {ticket.associatedReports.map((ar) => (
-                    <div key={ar.associationId} className="flex items-center justify-between text-[11px] text-teal-900 bg-white/70 p-2 rounded border border-teal-100">
-                      <div>
-                        <span className="font-semibold text-slate-900">{ar.studentName}: </span>
-                        <span>{ar.note || 'Subscribed to tracking updates.'}</span>
-                      </div>
-                      <span className="text-slate-400 font-mono text-[10px] shrink-0 ml-2">
-                        {new Date(ar.timestamp).toLocaleDateString()}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <span className="text-slate-400 font-mono text-[11px]">Consolidated Single Work Order</span>
             </div>
           )}
         </div>
+      </div>
+
+      {/* Dedicated Staff Updates Section */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-teal-600" />
+            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+              Staff Updates & Facility Dispatches
+            </h2>
+          </div>
+          <span className="text-xs text-slate-400 font-mono">
+            {ticket.assignedDepartment}
+          </span>
+        </div>
+
+        {(() => {
+          const staffEvents = (ticket.statusHistory || []).filter(
+            (h) => h.role === 'staff' || (h.role === 'system' && h.status !== 'Open')
+          );
+          const staffNotes = (ticket.notesThread || []).filter((n) => n.role === 'staff');
+
+          const hasStaffUpdates = staffEvents.length > 0 || staffNotes.length > 0;
+
+          if (!hasStaffUpdates) {
+            return (
+              <div className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-100 text-xs text-slate-500 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+                <span>
+                  No technician notes logged yet. Dispatch is queued with {ticket.assignedDepartment}.
+                </span>
+              </div>
+            );
+          }
+
+          return (
+            <div className="mt-4 space-y-3">
+              {staffEvents.map((evt) => (
+                <div key={evt.id} className="p-3.5 rounded-lg bg-teal-50/60 border border-teal-100 text-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-900">{evt.updatedBy}</span>
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-teal-100 text-teal-800">
+                        Facility Staff
+                      </span>
+                      <StatusBadge status={evt.status} size="sm" />
+                    </div>
+                    <span className="text-slate-400 font-mono text-[11px]">
+                      {new Date(evt.timestamp).toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-slate-700 leading-relaxed font-medium">{evt.notes}</p>
+                </div>
+              ))}
+
+              {staffNotes.map((note) => (
+                <div key={note.id} className="p-3.5 rounded-lg bg-slate-900 text-white text-xs border border-slate-800">
+                  <div className="flex items-center justify-between gap-1 mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-teal-300">{note.author}</span>
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                        Field Note
+                      </span>
+                    </div>
+                    <span className="text-slate-400 font-mono text-[11px]">
+                      {new Date(note.timestamp).toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-slate-200 leading-relaxed">{note.message}</p>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Status History Timeline */}

@@ -10,12 +10,17 @@ import {
   AlertTriangle,
   ArrowRight,
   RefreshCw,
-  MessageSquare
+  MessageSquare,
+  FileText,
+  Camera,
+  Info
 } from 'lucide-react';
 
 interface AIClarificationViewProps {
   currentAnalysis: AnalysisResult;
   messages: ClarificationMessage[];
+  originalComplaint?: string;
+  imageUrl?: string;
   onSendMessage: (replyText: string) => void;
   isLoading: boolean;
   onProceedToReview: () => void;
@@ -25,6 +30,8 @@ interface AIClarificationViewProps {
 export const AIClarificationView: React.FC<AIClarificationViewProps> = ({
   currentAnalysis,
   messages,
+  originalComplaint,
+  imageUrl,
   onSendMessage,
   isLoading,
   onProceedToReview,
@@ -134,6 +141,50 @@ export const AIClarificationView: React.FC<AIClarificationViewProps> = ({
         )}
       </div>
 
+      {/* Preserved Complaint & Photo Context Card */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-800 uppercase tracking-wider">
+            <FileText className="w-4 h-4 text-teal-600" />
+            <span>Preserved Intake Context</span>
+          </div>
+          <span className="text-[11px] text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200 font-mono">
+            Single Draft Session
+          </span>
+        </div>
+
+        <div className="mt-3.5 flex flex-col sm:flex-row gap-4 items-start">
+          {imageUrl && (
+            <div className="shrink-0">
+              <img
+                src={imageUrl}
+                alt="Complaint attachment"
+                className="w-24 h-24 object-cover rounded-lg border border-slate-200 shadow-xs"
+              />
+              <span className="text-[10px] text-slate-400 block text-center mt-1">Uploaded Photo</span>
+            </div>
+          )}
+
+          <div className="flex-1 space-y-2">
+            <div>
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+                Original Description:
+              </span>
+              <p className="text-xs sm:text-sm text-slate-800 italic mt-0.5 leading-relaxed bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                "{originalComplaint || 'Visual defect photo uploaded for facility diagnosis'}"
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <Info className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+              <span>
+                Your original complaint, photo, and previous responses remain saved together while we gather missing location specifics.
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Conversation Thread */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
         <div className="px-6 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
@@ -161,9 +212,17 @@ export const AIClarificationView: React.FC<AIClarificationViewProps> = ({
                 className={`max-w-[85%] rounded-xl p-3.5 text-xs sm:text-sm leading-relaxed ${
                   msg.role === 'user'
                     ? 'bg-slate-900 text-white font-medium rounded-tr-none'
+                    : msg.isQuestion
+                    ? 'bg-teal-50 border-2 border-teal-300 text-slate-900 rounded-tl-none shadow-xs'
                     : 'bg-teal-50/70 border border-teal-100 text-slate-900 rounded-tl-none'
                 }`}
               >
+                {msg.isQuestion && (
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-teal-800 mb-1.5">
+                    <HelpCircle className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                    <span>Gemini's Clarification Question</span>
+                  </div>
+                )}
                 {msg.content}
               </div>
             </div>

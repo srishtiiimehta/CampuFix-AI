@@ -177,7 +177,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              All Authorized Issues ({tickets.length})
+              All Campus Issues ({tickets.length})
             </button>
           </div>
 
@@ -247,13 +247,19 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
                     <span className="text-slate-300" aria-hidden="true">·</span>
 
-                    <span className="text-xs font-mono tabular-nums text-slate-500 font-medium">
+                    <span className="text-xs font-mono tabular-nums text-slate-700 font-semibold">
                       {ticket.ticketId}
                     </span>
 
-                    {ticket.isDemo && (
+                    <span className="text-slate-300" aria-hidden="true">·</span>
+
+                    {ticket.isDemo ? (
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
                         DEMO RECORD
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200">
+                        LIVE TICKET
                       </span>
                     )}
 
@@ -266,10 +272,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
                   {/* Date & Tracked badge */}
                   <div className="flex items-center gap-2 text-xs text-slate-400 font-mono">
-                    {((ticket.associatedReportCount && ticket.associatedReportCount > 1) || (ticket.trackedBy && ticket.trackedBy.length > 1)) && (
-                      <span className="inline-flex items-center gap-1 text-slate-600 font-medium bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                        <Users className="w-3 h-3 text-slate-500" />
-                        <span>{ticket.associatedReportCount || ticket.trackedBy?.length} reports consolidated</span>
+                    {ticket.trackedBy && ticket.trackedBy.length > 1 && (
+                      <span className="inline-flex items-center gap-1 text-slate-500 font-medium bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                        <Users className="w-3 h-3 text-slate-400" />
+                        <span>{ticket.trackedBy.length} students tracking</span>
                       </span>
                     )}
                     <span>{new Date(ticket.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>

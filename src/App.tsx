@@ -17,8 +17,7 @@ import {
   addTicketNote, 
   analyzeWithGemini, 
   checkDuplicatesWithGemini, 
-  resetDemoData,
-  setActiveUserId
+  resetDemoData 
 } from './services/api';
 import { Navbar, ActivePage, UserRole } from './components/Navbar';
 import { StudentDashboard } from './components/StudentDashboard';
@@ -33,22 +32,15 @@ import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function App() {
   // Navigation & User Session State
-  const [activePage, setActivePage] = useState<ActivePage>(() => {
-    return (sessionStorage.getItem('campusfix_active_page') as ActivePage) || 'student_dashboard';
-  });
-  const [userRole, setUserRole] = useState<UserRole>(() => {
-    return (sessionStorage.getItem('campusfix_user_role') as UserRole) || 'student';
-  });
+  const [activePage, setActivePage] = useState<ActivePage>('student_dashboard');
+  const [userRole, setUserRole] = useState<UserRole>('student');
   const currentStudentId = 'stu_alex_c';
   const currentStudentName = 'Alex Chen (Sophomore)';
   const currentStaffName = 'Marcus Vance (Facilities Lead)';
 
   // App Data State
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(() => {
-    return sessionStorage.getItem('campusfix_selected_ticket') || null;
-  });
-  const [singleLoadedTicket, setSingleLoadedTicket] = useState<Ticket | null>(null);
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [isLoadingTickets, setIsLoadingTickets] = useState(false);
   const [isResettingDemo, setIsResettingDemo] = useState(false);
 
@@ -87,29 +79,7 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 5000);
   };
 
-  // Sync role to API session header
-  const handleRoleChange = (newRole: UserRole) => {
-    setUserRole(newRole);
-    sessionStorage.setItem('campusfix_user_role', newRole);
-    if (newRole === 'staff') {
-      setActiveUserId('staff_marcus_v');
-    } else {
-      setActiveUserId(currentStudentId);
-    }
-  };
-
-  // Persist navigation and ticket selection across browser refreshes
-  useEffect(() => {
-    sessionStorage.setItem('campusfix_active_page', activePage);
-  }, [activePage]);
-
-  useEffect(() => {
-    if (selectedTicketId) {
-      sessionStorage.setItem('campusfix_selected_ticket', selectedTicketId);
-    }
-  }, [selectedTicketId]);
-
-  // Load all tickets from server according to authorized user session
+  // Load all tickets from server
   const loadTickets = useCallback(async () => {
     try {
       setIsLoadingTickets(true);
@@ -123,28 +93,9 @@ export default function App() {
     }
   }, []);
 
-  // Fetch when role or loadTickets changes
   useEffect(() => {
-    if (userRole === 'staff') {
-      setActiveUserId('staff_marcus_v');
-    } else {
-      setActiveUserId(currentStudentId);
-    }
     loadTickets();
-  }, [userRole, loadTickets]);
-
-  // Retrieve single ticket state from persistent storage if selected
-  useEffect(() => {
-    if (selectedTicketId) {
-      fetchTicketById(selectedTicketId)
-        .then((ticket) => {
-          setSingleLoadedTicket(ticket);
-        })
-        .catch((err) => {
-          console.warn('Could not fetch single ticket:', err);
-        });
-    }
-  }, [selectedTicketId]);
+  }, [loadTickets]);
 
   // Handler: Reset Demo Data
   const handleResetDemo = async () => {
@@ -152,10 +103,6 @@ export default function App() {
       setIsResettingDemo(true);
       const refreshed = await resetDemoData();
       setTickets(refreshed);
-      if (selectedTicketId) {
-        const found = refreshed.find((t) => t.ticketId === selectedTicketId);
-        if (found) setSingleLoadedTicket(found);
-      }
       showToast('Demonstration dataset reset to initial state with 4 sample tickets');
     } catch (err: any) {
       showToast(err.message || 'Failed to reset demo data', 'error');
@@ -314,19 +261,8 @@ export default function App() {
     try {
       setIsSubmittingTicket(true);
       const studentNote = `Student ${currentStudentName} joined tracking updates for this issue. Original complaint: "${candidateTicketData?.issueSummary}"`;
-      const updated = await trackExistingTicket(
-        existingTicketId, 
-        currentStudentId, 
-        studentNote,
-        candidateTicketData ? {
-          candidateSummary: candidateTicketData.issueSummary,
-          candidateLocation: candidateTicketData.reportedLocation,
-          candidateCategory: candidateTicketData.category,
-          candidateFacts: candidateTicketData.studentProvidedFacts,
-        } : undefined
-      );
+      const updated = await trackExistingTicket(existingTicketId, currentStudentId, studentNote);
 
-      setSingleLoadedTicket(updated);
       await loadTickets();
       setSelectedTicketId(existingTicketId);
       setActivePage('ticket_tracking');
@@ -361,7 +297,6 @@ export default function App() {
         relatedTicketId: duplicates.length > 0 ? duplicates[0].ticket.ticketId : undefined,
       });
 
-      setSingleLoadedTicket(created);
       await loadTickets();
       setSelectedTicketId(created.ticketId);
       setActivePage('ticket_tracking');
@@ -378,7 +313,6 @@ export default function App() {
     try {
       const author = userRole === 'staff' ? currentStaffName : currentStudentName;
       const updated = await addTicketNote(ticketId, author, userRole, message);
-      setSingleLoadedTicket(updated);
       setTickets((prev) => prev.map((t) => (t.ticketId === ticketId ? updated : t)));
       showToast('Field note added to ticket history');
     } catch (err: any) {
@@ -403,7 +337,6 @@ export default function App() {
         resolutionNotes,
       });
 
-      setSingleLoadedTicket(updated);
       setTickets((prev) => prev.map((t) => (t.ticketId === ticketId ? updated : t)));
       showToast(`Ticket ${ticketId} updated to ${newStatus}`);
     } finally {
@@ -411,10 +344,7 @@ export default function App() {
     }
   };
 
-  const selectedTicket =
-    (singleLoadedTicket && singleLoadedTicket.ticketId === selectedTicketId)
-      ? singleLoadedTicket
-      : tickets.find((t) => t.ticketId === selectedTicketId);
+  const selectedTicket = tickets.find((t) => t.ticketId === selectedTicketId);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 font-sans antialiased">
@@ -423,7 +353,7 @@ export default function App() {
         activePage={activePage}
         setActivePage={setActivePage}
         userRole={userRole}
-        setUserRole={handleRoleChange}
+        setUserRole={setUserRole}
         onResetDemoData={handleResetDemo}
         isResetting={isResettingDemo}
         selectedTicketId={selectedTicketId}
@@ -474,51 +404,105 @@ export default function App() {
         )}
 
         {/* View 3: AI Clarification Conversation */}
-        {activePage === 'clarification' && analysisResult && (
-          <AIClarificationView
-            currentAnalysis={analysisResult}
-            messages={clarificationMessages}
-            onSendMessage={handleSendClarification}
-            isLoading={isAnalyzing}
-            onProceedToReview={() => setActivePage('review_confirm')}
-            onRestart={() => setActivePage('new_complaint')}
-          />
+        {activePage === 'clarification' && (
+          analysisResult ? (
+            <AIClarificationView
+              currentAnalysis={analysisResult}
+              messages={clarificationMessages}
+              originalComplaint={complaintText}
+              imageUrl={imageData?.base64}
+              onSendMessage={handleSendClarification}
+              isLoading={isAnalyzing}
+              onProceedToReview={() => setActivePage('review_confirm')}
+              onRestart={() => setActivePage('new_complaint')}
+            />
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center max-w-md mx-auto space-y-3">
+              <h3 className="text-sm font-bold text-slate-900">No Active Complaint in Session</h3>
+              <p className="text-xs text-slate-500">Please describe your maintenance problem to start AI clarification.</p>
+              <button
+                onClick={() => setActivePage('new_complaint')}
+                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+              >
+                Report New Problem
+              </button>
+            </div>
+          )
         )}
 
         {/* View 4: Ticket Review and Confirmation */}
-        {activePage === 'review_confirm' && analysisResult && (
-          <TicketReviewCard
-            analysis={analysisResult}
-            imageUrl={imageData?.base64}
-            onConfirm={handleReviewProceed}
-            isCheckingDuplicates={isCheckingDuplicates}
-            onBackToEdit={() => setActivePage('clarification')}
-          />
+        {activePage === 'review_confirm' && (
+          analysisResult ? (
+            <TicketReviewCard
+              analysis={analysisResult}
+              imageUrl={imageData?.base64}
+              onConfirm={handleReviewProceed}
+              isCheckingDuplicates={isCheckingDuplicates}
+              onBackToEdit={() => setActivePage('clarification')}
+            />
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center max-w-md mx-auto space-y-3">
+              <h3 className="text-sm font-bold text-slate-900">No Ticket Available for Review</h3>
+              <p className="text-xs text-slate-500">Please start a new complaint to generate ticket details.</p>
+              <button
+                onClick={() => setActivePage('new_complaint')}
+                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+              >
+                Start New Complaint
+              </button>
+            </div>
+          )
         )}
 
         {/* View 5: Duplicate Review */}
-        {activePage === 'duplicate_review' && candidateTicketData && (
-          <DuplicateReviewModal
-            duplicates={duplicates}
-            candidateTicket={candidateTicketData}
-            onTrackExisting={handleTrackExisting}
-            onSubmitSeparate={handleSubmitSeparateTicket}
-            onCancel={() => setActivePage('review_confirm')}
-            isSubmitting={isSubmittingTicket}
-          />
+        {activePage === 'duplicate_review' && (
+          candidateTicketData ? (
+            <DuplicateReviewModal
+              duplicates={duplicates}
+              candidateTicket={candidateTicketData}
+              onTrackExisting={handleTrackExisting}
+              onSubmitSeparate={handleSubmitSeparateTicket}
+              onCancel={() => setActivePage('review_confirm')}
+              isSubmitting={isSubmittingTicket}
+            />
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center max-w-md mx-auto space-y-3">
+              <h3 className="text-sm font-bold text-slate-900">No Ticket Candidate to Check</h3>
+              <p className="text-xs text-slate-500">Please start a complaint to check for duplicate records.</p>
+              <button
+                onClick={() => setActivePage('new_complaint')}
+                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+              >
+                Start New Complaint
+              </button>
+            </div>
+          )
         )}
 
         {/* View 6: Ticket Tracking & Status History */}
-        {activePage === 'ticket_tracking' && selectedTicket && (
-          <TicketTrackingView
-            ticket={selectedTicket}
-            currentUserRole={userRole}
-            currentUserName={userRole === 'staff' ? currentStaffName : currentStudentName}
-            onBack={() => setActivePage(userRole === 'staff' ? 'staff_dashboard' : 'student_dashboard')}
-            onAddNote={handleAddTicketNote}
-            isAddingNote={false}
-            onOpenStaffControls={() => setStaffModalTicket(selectedTicket)}
-          />
+        {activePage === 'ticket_tracking' && (
+          selectedTicket ? (
+            <TicketTrackingView
+              ticket={selectedTicket}
+              currentUserRole={userRole}
+              currentUserName={userRole === 'staff' ? currentStaffName : currentStudentName}
+              onBack={() => setActivePage(userRole === 'staff' ? 'staff_dashboard' : 'student_dashboard')}
+              onAddNote={handleAddTicketNote}
+              isAddingNote={false}
+              onOpenStaffControls={() => setStaffModalTicket(selectedTicket)}
+            />
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center max-w-md mx-auto space-y-3">
+              <h3 className="text-sm font-bold text-slate-900">No Ticket Selected</h3>
+              <p className="text-xs text-slate-500">Select any ticket from your dashboard to view its tracking updates and audit trail.</p>
+              <button
+                onClick={() => setActivePage('student_dashboard')}
+                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+              >
+                Go to Dashboard
+              </button>
+            </div>
+          )
         )}
 
         {/* View 7: Staff Dashboard */}

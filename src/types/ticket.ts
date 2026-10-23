@@ -30,21 +30,6 @@ export interface StatusHistoryItem {
   notes: string;
 }
 
-export interface DuplicateReportAssociation {
-  id: string;
-  ticketId: string;
-  reporterId: string;
-  reporterName: string;
-  decision: 'tracked_existing' | 'separate_issue';
-  candidateSummary: string;
-  candidateLocation: string;
-  candidateCategory: TicketCategory;
-  candidateFacts?: string[];
-  studentNote?: string;
-  createdAt: string;
-  separateTicketId?: string;
-}
-
 export interface Ticket {
   ticketId: string;
   reporterId: string;
@@ -67,14 +52,6 @@ export interface Ticket {
   statusHistory: StatusHistoryItem[];
   relatedTicketId?: string;
   trackedBy: string[]; // student userIds tracking this ticket
-  associatedReportCount?: number; // total count of unified reports for this defect
-  associatedReports?: {
-    associationId: string;
-    studentId: string;
-    studentName: string;
-    note?: string;
-    timestamp: string;
-  }[];
   resolutionNotes?: string;
   isSafetyHazard?: boolean;
   safetyWarning?: string;
@@ -115,35 +92,8 @@ export interface AnalysisResult {
 }
 
 export interface DuplicateMatch {
-  ticketId: string;
-  category: TicketCategory;
-  issueSummary: string;
-  reportedLocation: string;
-  status: TicketStatus;
-  reasonForMatch: string;
-  matchReason?: string; // backwards compatibility alias
-  similarityScore: number;
-  recommendation: 'track_existing' | 'separate_issue';
   ticket: Ticket;
-}
-
-export interface CampusUser {
-  id: string;
-  name: string;
-  email: string;
-  role: 'student' | 'staff';
-  affiliation?: string;
-  department?: string;
-  title?: string;
-}
-
-export interface CampusDepartment {
-  id: string;
-  name: DepartmentName;
-  category: TicketCategory;
-  leadName: string;
-  contactEmail: string;
-  emergencyPhone: string;
-  activeTechnicians: number;
-  targetSlaHours: number;
+  similarityScore: number;
+  matchReason: string;
+  recommendation: 'track_existing' | 'separate_issue';
 }
