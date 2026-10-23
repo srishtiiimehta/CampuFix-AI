@@ -1,0 +1,6 @@
+{
+  "name": "CampusFix AI",
+  "description": "Intelligent campus maintenance reporting and resolution platform powered by Google Gemini AI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

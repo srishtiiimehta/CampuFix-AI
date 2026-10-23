@@ -1,0 +1,241 @@
+[
+  {
+    "ticketId": "TKT-DEMO-001",
+    "reporterId": "stu_sarah_m",
+    "reporterName": "Sarah Miller (Sophomore)",
+    "reporterRole": "student",
+    "category": "Internet Connectivity",
+    "assignedDepartment": "IT / Network Support",
+    "issueSummary": "Intermittent Wi-Fi disconnects and low throughput on Campus-Secure around 2nd-floor quiet study pods",
+    "reportedLocation": "Main University Library, 2nd Floor, East Wing Study Commons",
+    "reportedTime": "2026-10-23T03:25:58.942Z",
+    "priority": "Medium",
+    "imageObservations": "Student attached screenshot of ping latency test showing 82% packet loss on 5GHz channel.",
+    "studentProvidedFacts": [
+      "Disconnections happen every 4-6 minutes",
+      "Affects multiple study desks in row E",
+      "Laptop displays \"Connected, no internet access\""
+    ],
+    "visualObservations": [
+      "Diagnostic screenshot indicates SSID Campus-Secure",
+      "Signal strength -78dBm with high jitter"
+    ],
+    "aiInferences": [
+      "Likely access point roaming failure or overloaded AP-LIB-2E unit",
+      "High student traffic area during midterm study weeks"
+    ],
+    "missingInformation": "",
+    "status": "In Progress",
+    "createdAt": "2026-10-23T03:25:58.943Z",
+    "updatedAt": "2026-10-23T06:25:58.943Z",
+    "statusHistory": [
+      {
+        "id": "hist-001-1",
+        "timestamp": "2026-10-23T03:25:58.943Z",
+        "status": "Open",
+        "updatedBy": "Sarah Miller (Student)",
+        "role": "student",
+        "notes": "Submitted initial complaint with connectivity telemetry screenshot."
+      },
+      {
+        "id": "hist-001-2",
+        "timestamp": "2026-10-23T04:25:58.943Z",
+        "status": "In Progress",
+        "updatedBy": "David Kim (IT Network Admin)",
+        "role": "staff",
+        "notes": "Dispatched network diagnostics team. Access point AP-LIB-2E power-cycled. Scheduled PoE switch replacement."
+      }
+    ],
+    "trackedBy": [
+      "stu_sarah_m",
+      "stu_alex_k",
+      "stu_priya_r"
+    ],
+    "notesThread": [
+      {
+        "id": "note-001",
+        "author": "David Kim (IT Network)",
+        "role": "staff",
+        "timestamp": "2026-10-23T06:25:58.943Z",
+        "message": "Rebooted the local access point. We are observing improved ping times, but monitoring through peak library hours."
+      }
+    ],
+    "isSafetyHazard": false,
+    "isDemo": true
+  },
+  {
+    "ticketId": "TKT-DEMO-002",
+    "reporterId": "stu_marcus_b",
+    "reporterName": "Marcus Bell (Junior)",
+    "reporterRole": "student",
+    "category": "Plumbing",
+    "assignedDepartment": "Plumbing / Water Maintenance",
+    "issueSummary": "High-pressure water pipe leak under rinse basin pooling onto chemical storage floor",
+    "reportedLocation": "Science Complex B, Room 104 Bio-Organic Chemistry Lab",
+    "reportedTime": "2026-10-22T20:25:58.943Z",
+    "priority": "Critical",
+    "imageObservations": "Photo shows water spraying against cabinet wall under sink P-104 and pooling near electrical baseboard conduit.",
+    "studentProvidedFacts": [
+      "Water spraying continuously under the secondary wash basin",
+      "Pool is spreading towards chemical cabinet 3"
+    ],
+    "visualObservations": [
+      "Ruptured PEX compression fitting visible near shutoff valve",
+      "Water pool approximately 3 inches from floor electrical junction box"
+    ],
+    "aiInferences": [
+      "Extreme safety hazard: high-pressure liquid near ground-level power conduit",
+      "Requires immediate emergency isolation valve shutdown"
+    ],
+    "missingInformation": "",
+    "status": "In Progress",
+    "createdAt": "2026-10-22T20:25:58.943Z",
+    "updatedAt": "2026-10-23T00:25:58.943Z",
+    "statusHistory": [
+      {
+        "id": "hist-002-1",
+        "timestamp": "2026-10-22T20:25:58.943Z",
+        "status": "Open",
+        "updatedBy": "Marcus Bell (Student)",
+        "role": "student",
+        "notes": "Urgent leak reported with photo."
+      },
+      {
+        "id": "hist-002-2",
+        "timestamp": "2026-10-22T21:25:58.943Z",
+        "status": "In Progress",
+        "updatedBy": "Robert Santos (Lead Plumber)",
+        "role": "staff",
+        "notes": "Emergency shutoff valve isolated in hallway riser 4. Replacement brass valve kit ordered for installation."
+      }
+    ],
+    "trackedBy": [
+      "stu_marcus_b",
+      "fac_prof_vance"
+    ],
+    "notesThread": [
+      {
+        "id": "note-002",
+        "author": "Robert Santos (Plumbing Dept)",
+        "role": "staff",
+        "timestamp": "2026-10-23T00:25:58.943Z",
+        "message": "Water shutoff verified safe. Electrician inspected adjacent outlet and certified dry. Pipe replacement underway."
+      }
+    ],
+    "isSafetyHazard": true,
+    "safetyWarning": "Water accumulation within 1 meter of 120V electrical conduit. Power breaker isolated by facilities.",
+    "isDemo": true
+  },
+  {
+    "ticketId": "TKT-DEMO-003",
+    "reporterId": "stu_emma_t",
+    "reporterName": "Emma Torres (Senior)",
+    "reporterRole": "student",
+    "category": "Electricity",
+    "assignedDepartment": "Electrical Maintenance",
+    "issueSummary": "Rapidly flickering overhead fluorescent lighting tube emitting loud magnetic humming during lectures",
+    "reportedLocation": "Engineering Hall, 2nd Floor, Lecture Hall 202",
+    "reportedTime": "2026-10-22T12:25:58.943Z",
+    "priority": "Low",
+    "imageObservations": "Ceiling ballast panel shows dark discoloration on the right starter tube.",
+    "studentProvidedFacts": [
+      "Back row lighting has been buzzing for two days",
+      "Tube strobes rapidly when turned to maximum brightness"
+    ],
+    "visualObservations": [
+      "Visible phosphor burn-in on ends of T8 fluorescent tube"
+    ],
+    "aiInferences": [
+      "Ballast capacitor failure or degraded tube filament",
+      "No immediate fire hazard, but high lecture distraction"
+    ],
+    "missingInformation": "",
+    "status": "Open",
+    "createdAt": "2026-10-22T12:25:58.943Z",
+    "updatedAt": "2026-10-22T12:25:58.943Z",
+    "statusHistory": [
+      {
+        "id": "hist-003-1",
+        "timestamp": "2026-10-22T12:25:58.943Z",
+        "status": "Open",
+        "updatedBy": "Emma Torres (Student)",
+        "role": "student",
+        "notes": "Ticket queued for routine electrical maintenance inspection."
+      }
+    ],
+    "trackedBy": [
+      "stu_emma_t"
+    ],
+    "notesThread": [],
+    "isSafetyHazard": false,
+    "isDemo": true
+  },
+  {
+    "ticketId": "TKT-DEMO-004",
+    "reporterId": "stu_jordan_l",
+    "reporterName": "Jordan Lee (Freshman)",
+    "reporterRole": "student",
+    "category": "Cleanliness",
+    "assignedDepartment": "Housekeeping / Sanitation",
+    "issueSummary": "Spilled coffee and shattered ceramic mug on main pedestrian marble corridor",
+    "reportedLocation": "Student Activity Center, Level 1 Main Concourse by South Entry",
+    "reportedTime": "2026-10-22T06:25:58.943Z",
+    "priority": "High",
+    "imageObservations": "Brown beverage puddle approximately 4 feet wide with ceramic fragments on slick floor tile.",
+    "studentProvidedFacts": [
+      "Someone dropped a full mug and walked away",
+      "Multiple students nearly slipped walking toward the turnstiles"
+    ],
+    "visualObservations": [
+      "Liquid pool with sharp ceramic shards on polished terrazzo flooring"
+    ],
+    "aiInferences": [
+      "Immediate slip-and-fall liability in heavy foot-traffic threshold"
+    ],
+    "missingInformation": "",
+    "status": "Resolved",
+    "createdAt": "2026-10-22T06:25:58.943Z",
+    "updatedAt": "2026-10-22T08:25:58.943Z",
+    "statusHistory": [
+      {
+        "id": "hist-004-1",
+        "timestamp": "2026-10-22T06:25:58.943Z",
+        "status": "Open",
+        "updatedBy": "Jordan Lee (Student)",
+        "role": "student",
+        "notes": "Reported slip hazard."
+      },
+      {
+        "id": "hist-004-2",
+        "timestamp": "2026-10-22T07:25:58.943Z",
+        "status": "In Progress",
+        "updatedBy": "Maria Alvarez (Sanitation Supervisor)",
+        "role": "staff",
+        "notes": "Safety cones positioned. Mobile wet-vac dispatch."
+      },
+      {
+        "id": "hist-004-3",
+        "timestamp": "2026-10-22T08:25:58.943Z",
+        "status": "Resolved",
+        "updatedBy": "Maria Alvarez (Sanitation Supervisor)",
+        "role": "staff",
+        "notes": "Corridor thoroughly swept for glass shards, mop-sanitized with degreaser, and floor blower dried."
+      }
+    ],
+    "trackedBy": [
+      "stu_jordan_l"
+    ],
+    "resolutionNotes": "Glass swept with magnetic broom, entire concourse section scrubbed, disinfected, and air-dried. Wet floor signs cleared after final supervisor sign-off.",
+    "notesThread": [
+      {
+        "id": "note-004",
+        "author": "Maria Alvarez (Sanitation)",
+        "role": "staff",
+        "timestamp": "2026-10-22T08:25:58.943Z",
+        "message": "All ceramic remnants removed. Floor dried and inspected."
+      }
+    ],
+    "isSafetyHazard": false,
+    "isDemo": true
+  }
+]
