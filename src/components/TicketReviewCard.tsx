@@ -113,6 +113,8 @@ export const TicketReviewCard: React.FC<TicketReviewCardProps> = ({
               </span>
               <span className="text-xs text-slate-400">· Status:</span>
               <span className="text-xs font-semibold text-amber-400">Open (Draft)</span>
+              <span className="text-xs text-slate-400">· Priority:</span>
+              <PriorityBadge priority={priority} size="sm" />
               {analysis.analysisSource === 'fallback' && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-200 bg-amber-950/90 px-2.5 py-0.5 rounded border border-amber-600">
                   <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
@@ -154,16 +156,19 @@ export const TicketReviewCard: React.FC<TicketReviewCardProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-300 font-semibold block mb-1">Priority</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs text-slate-300 font-semibold block">Priority</label>
+                    <PriorityBadge priority={priority} size="sm" />
+                  </div>
                   <select
                     value={priority}
                     onChange={(e) => setPriority(e.target.value as TicketPriority)}
                     className="w-full px-3 py-2 text-xs rounded bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-teal-500"
                   >
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                    <option value="Critical">Critical</option>
+                    <option value="Low">Low (Routine maintenance)</option>
+                    <option value="Medium">Medium (Standard facility issue)</option>
+                    <option value="High">High (Disruptive defect)</option>
+                    <option value="Critical">Critical (Immediate safety risk / hazard)</option>
                   </select>
                 </div>
               </div>
@@ -178,7 +183,7 @@ export const TicketReviewCard: React.FC<TicketReviewCardProps> = ({
         </div>
 
         {/* Core Field Attributes Grid */}
-        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-5 border-b border-slate-100 bg-slate-50/50">
           <div>
             <span className="text-xs font-medium text-slate-400 uppercase tracking-wider block">
               Campus Location
@@ -203,10 +208,29 @@ export const TicketReviewCard: React.FC<TicketReviewCardProps> = ({
             <span className="text-xs font-medium text-slate-400 uppercase tracking-wider block">
               Assigned Department
             </span>
-            <div className="font-semibold text-slate-900 text-sm mt-1">
-              {assignedDept}
+            <div className="flex items-center gap-1.5 font-semibold text-slate-900 text-sm mt-1">
+              <CategoryIcon category={category} className="w-4 h-4 shrink-0" />
+              <span>{assignedDept}</span>
             </div>
             <div className="text-[11px] text-slate-400">Mapped from {category}</div>
+          </div>
+
+          <div>
+            <span className="text-xs font-medium text-slate-400 uppercase tracking-wider block mb-1">
+              Assessed Priority
+            </span>
+            <div className="flex items-center gap-2 mt-1">
+              <PriorityBadge priority={priority} size="md" />
+              {priority === 'Critical' && (
+                <span className="text-[11px] font-semibold text-red-600">Urgent</span>
+              )}
+            </div>
+            <div className="text-[11px] text-slate-400 mt-0.5">
+              {priority === 'Critical' && 'Immediate safety hazard'}
+              {priority === 'High' && 'High disruption to campus'}
+              {priority === 'Medium' && 'Standard facility issue'}
+              {priority === 'Low' && 'Routine preventive work'}
+            </div>
           </div>
         </div>
 
