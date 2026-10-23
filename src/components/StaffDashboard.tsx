@@ -24,6 +24,7 @@ import {
 
 interface StaffDashboardProps {
   tickets: Ticket[];
+  currentUserName: string;
   onOpenTicketDetails: (ticket: Ticket) => void;
   onViewStudentTracking: (ticketId: string) => void;
   onRunE2ETest?: () => void;
@@ -31,6 +32,7 @@ interface StaffDashboardProps {
 
 export const StaffDashboard: React.FC<StaffDashboardProps> = ({
   tickets,
+  currentUserName,
   onOpenTicketDetails,
   onViewStudentTracking,
   onRunE2ETest,
@@ -40,6 +42,7 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
   const [priorityFilter, setPriorityFilter] = useState<TicketPriority | 'All'>('All');
   const [departmentFilter, setDepartmentFilter] = useState<DepartmentName | 'All'>('All');
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'All'>('All');
+  const firstName = currentUserName.trim().split(/\s+/)[0] || 'there';
 
   // Exact metric counts derived directly from live stored ticket data
   const totalCount = tickets.length;
@@ -95,10 +98,10 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
               <span>Campus Facility Operations & Work Order Dispatch</span>
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mt-1">
-              Staff Maintenance Dashboard
+              Welcome, {firstName}
             </h1>
             <p className="text-xs md:text-sm text-slate-500 mt-1">
-              Logged in as Marcus Vance (Facilities Lead). Real-time ticket management, technician dispatch, department reassignment, and formal verification sign-off.
+              Your facilities workspace is ready. Triage reports, dispatch the right crew, and keep campus moving.
             </p>
           </div>
 

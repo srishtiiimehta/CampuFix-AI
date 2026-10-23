@@ -16,15 +16,29 @@ const DATA_FILE = path.join(DATA_DIR, 'tickets.json');
 
 class TicketDataStore {
   private tickets: Ticket[] = [];
+  private ready?: Promise<void>;
 
-  constructor() {
-    this.initStore();
+  constructor() {}
+
+  private ensureReady() {
+    return this.ready ??= this.initStore();
   }
 
-  private initStore() {
+  private async initStore() {
     try {
       if (!fs.existsSync(DATA_DIR)) {
         fs.mkdirSync(DATA_DIR, { recursive: true });
+      }
+
+      const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, '');
+      const serviceKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (supabaseUrl && serviceKey) {
+        try {
+          const response = await fetch(`${supabaseUrl}/rest/v1/campusfix_ticket_records?select=ticket_id,record,updated_at&order=updated_at.desc`, { headers: { apikey: serviceKey } });
+          if (!response.ok) throw new Error(`Supabase tickets read failed (${response.status})`);
+          const rows = await response.json() as Array<{ record: Ticket }>;
+          if (rows.length) { this.tickets = rows.map((row) => row.record); this.writeLocalFile(); return; }
+        } catch (error) { console.error('Supabase tickets unavailable; using local JSON fallback:', error); }
       }
 
       if (fs.existsSync(DATA_FILE)) {
@@ -32,38 +46,57 @@ class TicketDataStore {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
           this.tickets = parsed;
+          await this.saveToFile();
           return;
         }
       }
       // Initialize with demo tickets
       this.tickets = [...INITIAL_DEMO_TICKETS];
-      this.saveToFile();
+      await this.saveToFile();
     } catch (err) {
       console.error('Error initializing TicketDataStore:', err);
       this.tickets = [...INITIAL_DEMO_TICKETS];
     }
   }
 
-  private saveToFile() {
+  private writeLocalFile() {
     try {
-      if (!fs.existsSync(DATA_DIR)) {
-        fs.mkdirSync(DATA_DIR, { recursive: true });
-      }
+      if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
       fs.writeFileSync(DATA_FILE, JSON.stringify(this.tickets, null, 2), 'utf-8');
-    } catch (err) {
-      console.error('Error writing tickets to file:', err);
-    }
+    } catch (err) { console.error('Error writing tickets to file:', err); }
   }
 
-  public getAll(): Ticket[] {
+  private async saveToFile(replaceAll = false) {
+    this.writeLocalFile();
+    const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, '');
+    const serviceKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !serviceKey) return;
+    if (replaceAll) {
+      const cleared = await fetch(`${supabaseUrl}/rest/v1/campusfix_ticket_records?ticket_id=not.is.null`, { method: 'DELETE', headers: { apikey: serviceKey } });
+      if (!cleared.ok) throw new Error(`Supabase tickets reset failed (${cleared.status})`);
+    }
+    const rows = this.tickets.map((ticket) => ({ ticket_id: ticket.ticketId, record: ticket, updated_at: new Date().toISOString() }));
+    if (!rows.length) return;
+    const response = await fetch(`${supabaseUrl}/rest/v1/campusfix_ticket_records?on_conflict=ticket_id`, {
+      method: 'POST',
+      headers: { apikey: serviceKey, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify(rows),
+    });
+    if (!response.ok) throw new Error(`Supabase tickets write failed (${response.status}): ${await response.text()}`);
+  }
+
+  public async getAll(): Promise<Ticket[]> {
+    await this.ensureReady();
     return [...this.tickets];
   }
 
-  public getById(id: string): Ticket | undefined {
+  public async getById(id: string): Promise<Ticket | undefined> {
+    await this.ensureReady();
     return this.tickets.find((t) => t.ticketId === id);
   }
 
-  public create(newTicketData: Partial<Ticket> & { issueSummary: string; category: TicketCategory; reportedLocation: string }): Ticket {
+  public async create(newTicketData: Partial<Ticket> & { issueSummary: string; category: TicketCategory; reportedLocation: string }): Promise<Ticket> {
+    await this.ensureReady();
     const validCategories: TicketCategory[] = ['Plumbing', 'Electricity', 'Cleanliness', 'Internet Connectivity'];
     if (!validCategories.includes(newTicketData.category)) {
       throw new Error(`Invalid category: ${newTicketData.category}. Must be one of: ${validCategories.join(', ')}`);
@@ -112,19 +145,20 @@ class TicketDataStore {
     };
 
     this.tickets.unshift(ticket);
-    this.saveToFile();
+    await this.saveToFile();
     return ticket;
   }
 
-  public updateStatus(
+  public async updateStatus(
     ticketId: string,
     newStatus: TicketStatus,
     updatedBy: string,
     role: 'staff' | 'student' | 'system',
     notes: string,
     resolutionNotes?: string
-  ): Ticket {
-    const ticket = this.getById(ticketId);
+  ): Promise<Ticket> {
+    await this.ensureReady();
+    const ticket = await this.getById(ticketId);
     if (!ticket) {
       throw new Error(`Ticket not found: ${ticketId}`);
     }
@@ -159,18 +193,19 @@ class TicketDataStore {
     };
 
     ticket.statusHistory.push(historyItem);
-    this.saveToFile();
+    await this.saveToFile();
     return ticket;
   }
 
-  public updateDepartment(
+  public async updateDepartment(
     ticketId: string,
     newDepartment: DepartmentName,
     updatedBy: string,
     role: 'staff' | 'student' | 'system',
     notes?: string
-  ): Ticket {
-    const ticket = this.getById(ticketId);
+  ): Promise<Ticket> {
+    await this.ensureReady();
+    const ticket = await this.getById(ticketId);
     if (!ticket) {
       throw new Error(`Ticket not found: ${ticketId}`);
     }
@@ -198,12 +233,13 @@ class TicketDataStore {
     };
 
     ticket.statusHistory.push(historyItem);
-    this.saveToFile();
+    await this.saveToFile();
     return ticket;
   }
 
-  public addThreadNote(ticketId: string, author: string, role: 'staff' | 'student', message: string): Ticket {
-    const ticket = this.getById(ticketId);
+  public async addThreadNote(ticketId: string, author: string, role: 'staff' | 'student', message: string): Promise<Ticket> {
+    await this.ensureReady();
+    const ticket = await this.getById(ticketId);
     if (!ticket) {
       throw new Error(`Ticket not found: ${ticketId}`);
     }
@@ -221,12 +257,13 @@ class TicketDataStore {
     });
 
     ticket.updatedAt = new Date().toISOString();
-    this.saveToFile();
+    await this.saveToFile();
     return ticket;
   }
 
-  public trackExistingTicket(ticketId: string, studentId: string, studentNote?: string): Ticket {
-    const ticket = this.getById(ticketId);
+  public async trackExistingTicket(ticketId: string, studentId: string, studentNote?: string): Promise<Ticket> {
+    await this.ensureReady();
+    const ticket = await this.getById(ticketId);
     if (!ticket) {
       throw new Error(`Ticket not found: ${ticketId}`);
     }
@@ -247,13 +284,14 @@ class TicketDataStore {
       notes: studentNote || 'Another student reported experiencing this same issue and subscribed to tracking updates.'
     });
 
-    this.saveToFile();
+    await this.saveToFile();
     return ticket;
   }
 
-  public resetDemoData(): Ticket[] {
+  public async resetDemoData(): Promise<Ticket[]> {
+    await this.ensureReady();
     this.tickets = [...INITIAL_DEMO_TICKETS];
-    this.saveToFile();
+    await this.saveToFile(true);
     return this.tickets;
   }
 }

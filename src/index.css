@@ -12,3 +12,107 @@
     font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
 }
+
+
+/* CampusFix palette: colors only; existing component geometry stays in Tailwind. */
+:root {
+  color-scheme: light;
+  --page: #F4F7FF;
+  --surface: #FFFFFF;
+  --nav: #DCE8FA;
+  --card: #EAF2FF;
+  --card-secondary: #F0EDFF;
+  --primary: #8B83E6;
+  --primary-hover: #756BD2;
+  --text-main: #263858;
+  --text-secondary: #62718D;
+  --border: #D8E1F2;
+  --highlight: #DCD6FF;
+}
+
+html.dark {
+  color-scheme: dark;
+  --page: #071B33;
+  --surface: #0D2340;
+  --nav: #061426;
+  --card: #142A49;
+  --card-secondary: #1D3154;
+  --primary: #A69BFF;
+  --primary-hover: #8F83F0;
+  --text-main: #F3F2FF;
+  --text-secondary: #C6C4E8;
+  --border: #2A4265;
+  --highlight: #34305F;
+}
+
+@layer base {
+  body { color: var(--text-main); background-color: var(--page); }
+}
+
+html, body { background-color: var(--page); }
+.app-shell { background-color: var(--page); color: var(--text-main); }
+.campusfix-nav.bg-white { background-color: var(--nav); border-color: var(--border); }
+.bg-white { background-color: var(--surface); }
+.app-shell.bg-slate-50, .cosmic-page.bg-slate-50, main.bg-slate-50 { background-color: var(--page); }
+.app-shell main [class~="bg-white"] { background-color: var(--card); }
+[class~="bg-slate-50"], [class*="bg-slate-50/"] { background-color: var(--card-secondary); }
+[class~="bg-slate-100"], [class*="bg-slate-100/"] { background-color: var(--card); }
+[class~="bg-slate-200"], [class*="bg-slate-200/"] { background-color: var(--highlight); }
+[class~="text-slate-900"], [class~="text-slate-800"] { color: var(--text-main); }
+[class~="text-slate-700"], [class~="text-slate-600"], [class~="text-slate-500"] { color: var(--text-secondary); }
+[class~="text-slate-400"] { color: var(--text-secondary); }
+[class*="border-slate-"] { border-color: var(--border); }
+[class~="bg-slate-900"], [class~="bg-slate-800"] { background-color: var(--nav); }
+[class~="bg-slate-900"] { color: var(--text-main); }
+[class~="bg-teal-600"], [class~="bg-teal-500"] { background-color: var(--primary); }
+[class~="hover:bg-teal-700"]:hover, [class~="hover:bg-teal-600"]:hover { background-color: var(--primary-hover); }
+[class~="text-teal-700"], [class~="text-teal-800"], [class~="text-teal-600"], [class~="text-teal-500"], [class~="text-teal-400"] { color: var(--primary-hover); }
+[class~="border-teal-600"], [class~="border-teal-500"], [class~="border-teal-400"] { border-color: var(--primary); }
+[class~="bg-teal-50"], [class*="bg-teal-50/"] { background-color: color-mix(in srgb, var(--highlight) 62%, transparent); }
+[class~="bg-teal-100"], [class~="bg-indigo-50"] { background-color: var(--highlight); }
+[class~="text-indigo-700"], [class~="text-indigo-600"], [class~="text-indigo-500"] { color: var(--primary-hover); }
+[class~="border-indigo-200"] { border-color: var(--border); }
+[class~="bg-indigo-600"] { background-color: var(--primary); }
+[class~="hover:bg-indigo-50"]:hover { background-color: var(--highlight); }
+[class~="hover:bg-slate-100"]:hover { background-color: var(--card); }
+[class~="hover:bg-slate-200"]:hover { background-color: var(--highlight); }
+[class~="hover:text-slate-900"]:hover { color: var(--text-main); }
+[class~="hover:bg-slate-800"]:hover { background-color: var(--primary-hover); }
+button[class~="bg-slate-900"] { background-color: var(--primary); color: var(--text-main); }
+[class*="focus:ring-teal-"]:focus { --tw-ring-color: var(--primary); }
+[class*="focus:border-teal-"]:focus { border-color: var(--primary); }
+[class*="hover:border-teal-"]:hover { border-color: var(--primary); }
+
+/* Preserve the welcome card while coordinating its gradient with the palette. */
+[class~="from-indigo-600"][class~="via-violet-600"] {
+  background-image: linear-gradient(135deg, #91A9D8, #8B83E6) !important;
+}
+html.dark [class~="from-indigo-600"][class~="via-violet-600"] {
+  background-image: linear-gradient(135deg, #1D3154, #34305F) !important;
+}
+
+/* Dark versions of the existing neutral surfaces and controls. */
+html.dark [class~="bg-slate-50"], html.dark [class*="bg-slate-50/"] { background-color: var(--card-secondary); }
+html.dark [class~="bg-slate-100"], html.dark [class*="bg-slate-100/"] { background-color: var(--card); }
+html.dark [class~="bg-slate-200"], html.dark [class*="bg-slate-200/"] { background-color: var(--highlight); }
+html.dark [class~="bg-slate-900"], html.dark [class~="bg-slate-800"] { background-color: var(--nav); }
+html.dark [class~="bg-teal-950"], html.dark [class~="bg-teal-900"], html.dark [class~="bg-teal-50"], html.dark [class*="bg-teal-50/"] { background-color: var(--highlight); }
+html.dark [class~="bg-teal-100"], html.dark [class~="bg-indigo-50"] { background-color: var(--highlight); }
+html.dark input, html.dark textarea, html.dark select { color: var(--text-main); background-color: var(--surface); border-color: var(--border); }
+html.dark input::placeholder, html.dark textarea::placeholder { color: var(--text-secondary); }
+html.dark [class~="text-slate-900"], html.dark [class~="text-slate-800"] { color: var(--text-main); }
+html.dark [class~="text-slate-700"], html.dark [class~="text-slate-600"], html.dark [class~="text-slate-500"], html.dark [class~="text-slate-400"] { color: var(--text-secondary); }
+html.dark [class~="text-teal-700"], html.dark [class~="text-teal-800"], html.dark [class~="text-teal-600"], html.dark [class~="text-teal-500"], html.dark [class~="text-teal-400"], html.dark [class~="text-teal-300"] { color: var(--primary); }
+html.dark [class~="text-indigo-900"], html.dark [class~="text-indigo-700"], html.dark [class~="text-indigo-600"], html.dark [class~="text-indigo-500"] { color: var(--text-main); }
+html.dark [class*="border-slate-"] { border-color: var(--border); }
+html.dark [class*="border-teal-"] { border-color: var(--border); }
+html.dark [class~="bg-teal-600"], html.dark [class~="bg-indigo-600"] { background-color: var(--primary); }
+html.dark [class~="bg-teal-600"][class~="text-white"], html.dark [class~="bg-indigo-600"][class~="text-white"] { color: #071B33; }
+html.dark [class~="hover:bg-teal-700"]:hover, html.dark [class~="hover:bg-teal-600"]:hover { background-color: var(--primary-hover); }
+html.dark [class~="hover:text-slate-800"]:hover { color: var(--text-main); }
+html.dark [class~="hover:bg-slate-800"]:hover { background-color: var(--primary-hover); }
+html.dark button[class~="bg-slate-900"] { background-color: var(--primary); color: #071B33; }
+html.dark .app-shell.bg-slate-50, html.dark main.bg-slate-50 { background-color: var(--page); }
+html.dark [class~="bg-slate-800"] [class~="text-white"] { color: var(--text-main); }
+[class~="from-indigo-500"][class~="to-fuchsia-500"] { background-image: linear-gradient(135deg, #8B83E6, #91A9D8) !important; }
+html.dark [class~="from-indigo-500"][class~="to-fuchsia-500"] { background-image: linear-gradient(135deg, #A69BFF, #756BD2) !important; }

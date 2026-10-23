@@ -64,29 +64,27 @@ export const PriorityBadge: React.FC<PriorityBadgeProps> = ({ priority, size = '
   switch (priority) {
     case 'Critical':
       return (
-        <span className={`inline-flex items-center gap-1.5 font-semibold rounded-md bg-red-50 text-red-700 border border-red-200 ${padding}`}>
-          <Flame className={isSm ? 'w-3 h-3 text-red-600' : 'w-3.5 h-3.5 text-red-600'} aria-hidden="true" />
+        <span className={`inline-flex items-center gap-1 font-semibold rounded-md bg-rose-50 text-rose-700 border border-rose-200 ${padding}`}>
+          <Flame className={isSm ? 'w-3 h-3 text-rose-600' : 'w-3.5 h-3.5 text-rose-600'} aria-hidden="true" />
           <span>Critical</span>
         </span>
       );
     case 'High':
       return (
-        <span className={`inline-flex items-center gap-1.5 font-semibold rounded-md bg-orange-50 text-orange-700 border border-orange-200 ${padding}`}>
+        <span className={`inline-flex items-center gap-1 font-medium rounded-md bg-orange-50 text-orange-700 border border-orange-200 ${padding}`}>
           <AlertCircle className={isSm ? 'w-3 h-3 text-orange-600' : 'w-3.5 h-3.5 text-orange-600'} aria-hidden="true" />
-          <span>High</span>
+          <span>High Priority</span>
         </span>
       );
     case 'Medium':
       return (
-        <span className={`inline-flex items-center gap-1.5 font-medium rounded-md bg-blue-50 text-blue-700 border border-blue-200 ${padding}`}>
-          <span className={`rounded-full bg-blue-500 shrink-0 ${isSm ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} aria-hidden="true" />
+        <span className={`inline-flex items-center gap-1 font-medium rounded-md bg-sky-50 text-sky-800 border border-sky-200 ${padding}`}>
           <span>Medium</span>
         </span>
       );
     case 'Low':
       return (
-        <span className={`inline-flex items-center gap-1.5 font-medium rounded-md bg-gray-100 text-gray-700 border border-gray-300 ${padding}`}>
-          <span className={`rounded-full bg-gray-400 shrink-0 ${isSm ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} aria-hidden="true" />
+        <span className={`inline-flex items-center gap-1 font-medium rounded-md bg-slate-100 text-slate-700 border border-slate-200 ${padding}`}>
           <span>Low</span>
         </span>
       );

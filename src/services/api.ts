@@ -41,7 +41,7 @@ export interface AuthUser {
   userId: string;
   name: string;
   role: 'student' | 'staff';
-  username: string;
+  email: string;
 }
 
 export interface LoginResponse {
@@ -50,11 +50,32 @@ export interface LoginResponse {
   user: AuthUser;
 }
 
-export async function login(username: string, password: string): Promise<LoginResponse> {
+export interface CreateAccountResponse {
+  success: boolean;
+  confirmationRequired: boolean;
+  message?: string;
+  token?: string;
+  user?: AuthUser;
+}
+
+export async function createAccount(fullName: string, email: string, password: string): Promise<CreateAccountResponse> {
+  const res = await fetch('/api/auth/signup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fullName, email, password }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Account creation failed. Please try again.');
+  if (data.token) setAuthToken(data.token);
+  return data;
+}
+
+export async function login(email: string, password: string): Promise<LoginResponse> {
   const res = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ email, password }),
   });
 
   const data = await res.json().catch(() => ({}));
@@ -160,8 +181,6 @@ export async function updateTicketStatus(
     role?: 'staff';
     notes?: string;
     resolutionNotes?: string;
-    assignedDepartment?: DepartmentName;
-    staffNote?: string;
   }
 ): Promise<Ticket> {
   const res = await fetch(`/api/tickets/${encodeURIComponent(ticketId)}/status`, {
@@ -300,3 +319,4 @@ export async function resetDemoData(): Promise<Ticket[]> {
   const json = await res.json();
   return json.tickets || [];
 }
+

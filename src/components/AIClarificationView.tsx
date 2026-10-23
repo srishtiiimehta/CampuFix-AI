@@ -18,6 +18,7 @@ import {
 
 interface AIClarificationViewProps {
   currentAnalysis: AnalysisResult;
+  currentUserName: string;
   messages: ClarificationMessage[];
   originalComplaint?: string;
   imageUrl?: string;
@@ -29,6 +30,7 @@ interface AIClarificationViewProps {
 
 export const AIClarificationView: React.FC<AIClarificationViewProps> = ({
   currentAnalysis,
+  currentUserName,
   messages,
   originalComplaint,
   imageUrl,
@@ -204,7 +206,7 @@ export const AIClarificationView: React.FC<AIClarificationViewProps> = ({
               }`}
             >
               <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-1 px-1">
-                <span>{msg.role === 'user' ? 'You (Alex Chen)' : 'CampusFix AI'}</span>
+                <span>{msg.role === 'user' ? `You (${currentUserName || 'Student'})` : 'CampusFix AI'}</span>
                 <span aria-hidden="true">·</span>
                 <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
               </div>

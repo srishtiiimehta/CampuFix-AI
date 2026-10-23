@@ -6,16 +6,17 @@ import {
   Search, 
   ArrowRight, 
   MapPin, 
-  Eye, 
-  CheckCircle2, 
-  AlertTriangle,
   Users,
-  Compass
+  Compass,
+  Sparkles,
+  Wrench,
+  CheckCircle2
 } from 'lucide-react';
 
 interface StudentDashboardProps {
   tickets: Ticket[];
   currentStudentId: string;
+  currentStudentName: string;
   onNewComplaint: () => void;
   onSelectTicket: (ticketId: string) => void;
 }
@@ -23,12 +24,15 @@ interface StudentDashboardProps {
 export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   tickets,
   currentStudentId,
+  currentStudentName,
   onNewComplaint,
   onSelectTicket,
 }) => {
   const [activeTab, setActiveTab] = useState<'my_tickets' | 'tracked_tickets' | 'all_campus'>('my_tickets');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<TicketCategory | 'All'>('All');
+  const firstName = currentStudentName.trim().split(/\s+/)[0] || 'there';
+  const initials = currentStudentName.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'CF';
 
   // Filtered views
   const myTickets = tickets.filter((t) => t.reporterId === currentStudentId);
@@ -58,66 +62,69 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
   return (
     <div className="space-y-8">
-      {/* Hero Welcome & Quick Stats */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 md:p-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-100">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-teal-700 tracking-wide uppercase">
-              <span>Campus Facility Portal</span>
-              <span aria-hidden="true">·</span>
-              <span>Student Account</span>
+      {/* Personalized welcome and campus impact */}
+      <section className="space-y-4">
+        <div className="relative isolate overflow-hidden rounded-[28px] bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 p-6 text-white shadow-xl shadow-indigo-200/60 sm:p-8">
+          <div aria-hidden="true" className="absolute -right-10 -top-16 -z-10 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
+          <div aria-hidden="true" className="absolute bottom-[-5rem] right-1/3 -z-10 h-48 w-48 rounded-full bg-pink-300/20 blur-3xl" />
+          <div className="flex flex-col justify-between gap-7 sm:flex-row sm:items-center">
+            <div className="max-w-2xl">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold tracking-wide text-white/95 backdrop-blur">
+                <Sparkles className="h-3.5 w-3.5 text-amber-200" />
+                <span>YOUR CAMPUS, YOUR CALL</span>
+              </div>
+              <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Hey, {firstName}! <span aria-hidden="true">👋</span></h1>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-indigo-50 sm:text-base">
+                Spot something broken? Drop it here. We’ll get it to the right crew so you can get back to your day.
+              </p>
+              <button
+                onClick={onNewComplaint}
+                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-indigo-700 shadow-lg shadow-indigo-950/10 transition hover:-translate-y-0.5 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-indigo-600"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Report a problem</span>
+                <ArrowRight className="h-4 w-4" />
+              </button>
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mt-1">
-              Welcome back, Alex Chen
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Report campus maintenance issues in informal text or photos. Google Gemini interprets symptoms and routes to facility crews.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-            <button
-              onClick={onNewComplaint}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-medium text-sm shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Report New Problem</span>
-            </button>
+            <div className="flex shrink-0 items-center gap-3 rounded-2xl border border-white/20 bg-white/10 p-3.5 backdrop-blur-md sm:self-start">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-lg font-extrabold text-indigo-700 shadow-sm">{initials}</div>
+              <div>
+                <div className="text-sm font-bold">{currentStudentName || 'Student'}</div>
+                <div className="mt-0.5 text-xs text-indigo-100">CampusFix student</div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* 3 Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6">
-          <div className="p-4 rounded-lg bg-slate-50 border border-slate-100">
-            <div className="text-xs font-medium text-slate-500 uppercase tracking-wider">Active Complaints</div>
-            <div className="text-2xl font-bold text-slate-900 mt-1 tabular-nums font-mono">{activeCount}</div>
-            <div className="text-xs text-slate-400 mt-0.5">Currently open or in progress</div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 to-white p-4 shadow-sm">
+            <div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wider text-amber-800">In the works</span><span className="rounded-xl bg-amber-100 p-2 text-amber-700"><Wrench className="h-4 w-4" /></span></div>
+            <div className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900">{activeCount}</div>
+            <div className="mt-1 text-xs text-slate-500">Your open or active reports</div>
           </div>
-
-          <div className="p-4 rounded-lg bg-slate-50 border border-slate-100">
-            <div className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tracked Existing Issues</div>
-            <div className="text-2xl font-bold text-slate-900 mt-1 tabular-nums font-mono">{trackedCount}</div>
-            <div className="text-xs text-slate-400 mt-0.5">Shared incidents you subscribed to</div>
+          <div className="rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 to-white p-4 shadow-sm">
+            <div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wider text-sky-800">Community mode</span><span className="rounded-xl bg-sky-100 p-2 text-sky-700"><Users className="h-4 w-4" /></span></div>
+            <div className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900">{trackedCount}</div>
+            <div className="mt-1 text-xs text-slate-500">Issues you’re following with others</div>
           </div>
-
-          <div className="p-4 rounded-lg bg-slate-50 border border-slate-100">
-            <div className="text-xs font-medium text-slate-500 uppercase tracking-wider">Resolved Repairs</div>
-            <div className="text-2xl font-bold text-emerald-700 mt-1 tabular-nums font-mono">{resolvedCount}</div>
-            <div className="text-xs text-slate-400 mt-0.5">Verified complete by facility staff</div>
+          <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-4 shadow-sm">
+            <div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wider text-emerald-800">Fixed up</span><span className="rounded-xl bg-emerald-100 p-2 text-emerald-700"><CheckCircle2 className="h-4 w-4" /></span></div>
+            <div className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900">{resolvedCount}</div>
+            <div className="mt-1 text-xs text-slate-500">Repairs completed for your reports</div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* 4 Allowed Categories Reference strip */}
       <div className="bg-slate-900 text-white rounded-xl p-5 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
           <div>
-            <h2 className="text-sm font-semibold text-teal-300">Four Campus Support Categories</h2>
+            <h2 className="text-sm font-semibold text-teal-300">What can we fix? Pick a lane</h2>
             <p className="text-xs text-slate-300 mt-0.5">
-              Gemini maps all student complaints directly into these official maintenance departments:
+              We route each report to the campus team that can sort it out:
             </p>
           </div>
-          <span className="text-xs text-teal-400 font-mono">Strict Department Routing</span>
+          <span className="text-xs text-teal-400 font-mono">Straight to the right crew ✨</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
