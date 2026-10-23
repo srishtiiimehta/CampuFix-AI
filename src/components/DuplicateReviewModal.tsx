@@ -75,38 +75,42 @@ export const DuplicateReviewModal: React.FC<DuplicateReviewModalProps> = ({
             Matching Active Tickets ({duplicates.length})
           </div>
 
-          {duplicates.map(({ ticket, similarityScore, matchReason }) => (
-            <div
-              key={ticket.ticketId}
-              className="bg-white rounded-xl border-2 border-teal-200/90 p-5 shadow-xs space-y-4"
-            >
-              {/* Match Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-2 py-0.5 rounded text-xs font-bold bg-teal-100 text-teal-900 border border-teal-300 tabular-nums">
-                    {similarityScore}% Match
-                  </span>
-                  <span className="text-xs font-mono text-slate-500 font-medium">
-                    {ticket.ticketId}
-                  </span>
-                  <span className="text-slate-300" aria-hidden="true">·</span>
-                  <StatusBadge status={ticket.status} />
-                  <PriorityBadge priority={ticket.priority} />
+          {duplicates.map((item) => {
+            const ticket = item.ticket;
+            const similarityScore = item.similarityScore;
+            const matchReason = item.reasonForMatch || item.matchReason || 'Matches category and campus location.';
+            return (
+              <div
+                key={ticket.ticketId}
+                className="bg-white rounded-xl border-2 border-teal-200/90 p-5 shadow-xs space-y-4"
+              >
+                {/* Match Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-teal-100 text-teal-900 border border-teal-300 tabular-nums">
+                      {similarityScore}% Match
+                    </span>
+                    <span className="text-xs font-mono text-slate-500 font-medium">
+                      {ticket.ticketId}
+                    </span>
+                    <span className="text-slate-300" aria-hidden="true">·</span>
+                    <StatusBadge status={ticket.status} />
+                    <PriorityBadge priority={ticket.priority} />
+                  </div>
+
+                  <div className="text-xs text-slate-400 font-mono">
+                    Reported {new Date(ticket.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  </div>
                 </div>
 
-                <div className="text-xs text-slate-400 font-mono">
-                  Reported {new Date(ticket.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                {/* Match Reason Rationale from Gemini */}
+                <div className="p-3 rounded-lg bg-teal-50/60 border border-teal-100 text-xs text-teal-950 flex items-start gap-2">
+                  <CopyCheck className="w-4 h-4 text-teal-700 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold">Why this matches: </span>
+                    {matchReason}
+                  </div>
                 </div>
-              </div>
-
-              {/* Match Reason Rationale from Gemini */}
-              <div className="p-3 rounded-lg bg-teal-50/60 border border-teal-100 text-xs text-teal-950 flex items-start gap-2">
-                <CopyCheck className="w-4 h-4 text-teal-700 shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-semibold">Why this matches: </span>
-                  {matchReason}
-                </div>
-              </div>
 
               {/* Existing Ticket Summary */}
               <div>
@@ -150,7 +154,8 @@ export const DuplicateReviewModal: React.FC<DuplicateReviewModalProps> = ({
                 </button>
               </div>
             </div>
-          ))}
+          );
+        })}
 
           {/* Fallback Option: Submit Separate */}
           <div className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">

@@ -1,0 +1,79 @@
+[
+  {
+    "id": "assoc-1792754963042-aodj",
+    "ticketId": "TKT-DEMO-001",
+    "reporterId": "stu_alex_c",
+    "reporterName": "Alex Chen (Sophomore)",
+    "decision": "separate_issue",
+    "candidateSummary": "Ethernet jack in Room 305 has damaged pin and cannot connect",
+    "candidateLocation": "Engineering Hall, 3rd Floor, Room 305",
+    "candidateCategory": "Internet Connectivity",
+    "candidateFacts": [
+      "Ethernet port physical pin bent"
+    ],
+    "createdAt": "2026-10-23T11:29:23.042Z",
+    "separateTicketId": "TKT-2026-8298",
+    "studentNote": "Student chose to submit as separate issue from TKT-DEMO-001."
+  },
+  {
+    "id": "assoc-1792754949261-a9h4",
+    "ticketId": "TKT-DEMO-001",
+    "reporterId": "stu_alex_c",
+    "reporterName": "Alex Chen (Sophomore)",
+    "decision": "tracked_existing",
+    "candidateSummary": "Wi-Fi keeps dropping on 2nd floor library study desk",
+    "candidateLocation": "Main University Library, 2nd Floor desk 12",
+    "candidateCategory": "Internet Connectivity",
+    "candidateFacts": [
+      "Disconnections every 5 mins"
+    ],
+    "studentNote": "Student Alex Chen experiencing same wifi disconnection at library desk 12.",
+    "createdAt": "2026-10-23T11:29:09.261Z"
+  },
+  {
+    "id": "assoc-demo-001",
+    "ticketId": "TKT-DEMO-001",
+    "reporterId": "stu_alex_k",
+    "reporterName": "Alex Kovacs (Student)",
+    "decision": "tracked_existing",
+    "candidateSummary": "Laptop continuously dropping Eduroam connection on Library 2nd floor desk row E",
+    "candidateLocation": "Main University Library, 2nd Floor",
+    "candidateCategory": "Internet Connectivity",
+    "candidateFacts": [
+      "Frequent drops during study hours",
+      "Ping timed out"
+    ],
+    "studentNote": "Student Alex Kovacs subscribed to tracking updates for Library WiFi defect.",
+    "createdAt": "2026-10-23T04:45:00.000Z"
+  },
+  {
+    "id": "assoc-demo-002",
+    "ticketId": "TKT-DEMO-001",
+    "reporterId": "stu_priya_r",
+    "reporterName": "Priya Raman (Student)",
+    "decision": "tracked_existing",
+    "candidateSummary": "Campus-Secure WiFi unavailable near quiet study pods",
+    "candidateLocation": "Main University Library, 2nd Floor East Wing",
+    "candidateCategory": "Internet Connectivity",
+    "candidateFacts": [
+      "Study pod 4 cannot acquire IP address"
+    ],
+    "studentNote": "Student Priya Raman subscribed to tracking updates for Library WiFi defect.",
+    "createdAt": "2026-10-23T05:10:00.000Z"
+  },
+  {
+    "id": "assoc-demo-003",
+    "ticketId": "TKT-DEMO-002",
+    "reporterId": "fac_prof_vance",
+    "reporterName": "Prof. J. Vance (Faculty)",
+    "decision": "tracked_existing",
+    "candidateSummary": "Water puddle expanding toward electrical conduit in lab 104",
+    "candidateLocation": "Science Complex B, Room 104",
+    "candidateCategory": "Plumbing",
+    "candidateFacts": [
+      "Lab session paused due to water hazard"
+    ],
+    "studentNote": "Faculty member joined tracking updates for urgent lab sink leak.",
+    "createdAt": "2026-10-22T21:00:00.000Z"
+  }
+]

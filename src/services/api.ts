@@ -1,4 +1,64 @@
-import { Ticket, AnalysisResult, DuplicateMatch, TicketCategory, TicketPriority, TicketStatus } from '../types/ticket';
+import { 
+  Ticket, 
+  AnalysisResult, 
+  DuplicateMatch, 
+  TicketCategory, 
+  TicketPriority, 
+  TicketStatus,
+  CampusUser,
+  CampusDepartment,
+  DuplicateReportAssociation 
+} from '../types/ticket';
+
+// Global session user state for client-server authorization sync
+let currentSessionUserId = 'stu_alex_c';
+
+export function setActiveUserId(userId: string) {
+  currentSessionUserId = userId;
+}
+
+export function getActiveUserId(): string {
+  return currentSessionUserId;
+}
+
+function getRequestHeaders(additional: Record<string, string> = {}) {
+  return {
+    'Content-Type': 'application/json',
+    'x-user-id': currentSessionUserId,
+    ...additional,
+  };
+}
+
+export async function fetchCurrentUser(): Promise<CampusUser> {
+  const res = await fetch('/api/users/me', { headers: getRequestHeaders() });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to fetch current user session');
+  }
+  const json = await res.json();
+  return json.user;
+}
+
+export async function fetchDepartments(): Promise<CampusDepartment[]> {
+  const res = await fetch('/api/departments', { headers: getRequestHeaders() });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to fetch departments');
+  }
+  const json = await res.json();
+  return json.departments || [];
+}
+
+export async function fetchAssociations(ticketId?: string): Promise<DuplicateReportAssociation[]> {
+  const url = ticketId ? `/api/associations?ticketId=${encodeURIComponent(ticketId)}` : '/api/associations';
+  const res = await fetch(url, { headers: getRequestHeaders() });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to fetch duplicate associations');
+  }
+  const json = await res.json();
+  return json.associations || [];
+}
 
 export async function fetchTickets(params: {
   search?: string;
@@ -16,7 +76,9 @@ export async function fetchTickets(params: {
   if (params.reporterId) query.set('reporterId', params.reporterId);
   if (params.trackedBy) query.set('trackedBy', params.trackedBy);
 
-  const res = await fetch(`/api/tickets?${query.toString()}`);
+  const res = await fetch(`/api/tickets?${query.toString()}`, {
+    headers: getRequestHeaders(),
+  });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error || 'Failed to fetch tickets');
@@ -26,18 +88,20 @@ export async function fetchTickets(params: {
 }
 
 export async function fetchTicketById(id: string): Promise<Ticket> {
-  const res = await fetch(`/api/tickets/${encodeURIComponent(id)}`);
+  const res = await fetch(`/api/tickets/${encodeURIComponent(id)}`, {
+    headers: getRequestHeaders(),
+  });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || 'Failed to fetch ticket');
+    throw new Error(data.error || `Failed to fetch ticket ${id}`);
   }
   const json = await res.json();
   return json.ticket;
 }
 
 export async function createTicket(ticketData: {
-  reporterId: string;
-  reporterName: string;
+  reporterId?: string;
+  reporterName?: string;
   category: TicketCategory;
   issueSummary: string;
   reportedLocation: string;
@@ -53,7 +117,7 @@ export async function createTicket(ticketData: {
 }): Promise<Ticket> {
   const res = await fetch('/api/tickets', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getRequestHeaders(),
     body: JSON.stringify(ticketData),
   });
 
@@ -69,15 +133,15 @@ export async function updateTicketStatus(
   ticketId: string,
   payload: {
     status: TicketStatus;
-    updatedBy: string;
-    role: 'staff';
-    notes: string;
+    updatedBy?: string;
+    role?: 'staff';
+    notes?: string;
     resolutionNotes?: string;
   }
 ): Promise<Ticket> {
   const res = await fetch(`/api/tickets/${encodeURIComponent(ticketId)}/status`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getRequestHeaders(),
     body: JSON.stringify(payload),
   });
 
@@ -92,12 +156,22 @@ export async function updateTicketStatus(
 export async function trackExistingTicket(
   ticketId: string,
   studentId: string,
-  studentNote?: string
+  studentNote?: string,
+  candidateDetails?: {
+    candidateSummary?: string;
+    candidateLocation?: string;
+    candidateCategory?: TicketCategory;
+    candidateFacts?: string[];
+  }
 ): Promise<Ticket> {
   const res = await fetch(`/api/tickets/${encodeURIComponent(ticketId)}/track`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ studentId, studentNote }),
+    headers: getRequestHeaders(),
+    body: JSON.stringify({
+      studentId,
+      studentNote,
+      ...candidateDetails,
+    }),
   });
 
   if (!res.ok) {
@@ -116,7 +190,7 @@ export async function addTicketNote(
 ): Promise<Ticket> {
   const res = await fetch(`/api/tickets/${encodeURIComponent(ticketId)}/note`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getRequestHeaders(),
     body: JSON.stringify({ author, role, message }),
   });
 
@@ -135,7 +209,7 @@ export async function analyzeWithGemini(
 ): Promise<AnalysisResult> {
   const res = await fetch('/api/gemini/analyze', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getRequestHeaders(),
     body: JSON.stringify({ complaint, image, conversationHistory }),
   });
 
@@ -155,7 +229,7 @@ export async function checkDuplicatesWithGemini(candidateTicket: {
 }): Promise<DuplicateMatch[]> {
   const res = await fetch('/api/gemini/check-duplicates', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getRequestHeaders(),
     body: JSON.stringify({ candidateTicket }),
   });
 
@@ -168,9 +242,13 @@ export async function checkDuplicatesWithGemini(candidateTicket: {
 }
 
 export async function resetDemoData(): Promise<Ticket[]> {
-  const res = await fetch('/api/demo/reset', { method: 'POST' });
+  const res = await fetch('/api/demo/reset', { 
+    method: 'POST',
+    headers: getRequestHeaders(),
+  });
   if (!res.ok) {
-    throw new Error('Failed to reset demo data');
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to reset demo data');
   }
   const json = await res.json();
   return json.tickets || [];

@@ -17,7 +17,8 @@ import {
   addTicketNote, 
   analyzeWithGemini, 
   checkDuplicatesWithGemini, 
-  resetDemoData 
+  resetDemoData,
+  setActiveUserId
 } from './services/api';
 import { Navbar, ActivePage, UserRole } from './components/Navbar';
 import { StudentDashboard } from './components/StudentDashboard';
@@ -32,15 +33,22 @@ import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function App() {
   // Navigation & User Session State
-  const [activePage, setActivePage] = useState<ActivePage>('student_dashboard');
-  const [userRole, setUserRole] = useState<UserRole>('student');
+  const [activePage, setActivePage] = useState<ActivePage>(() => {
+    return (sessionStorage.getItem('campusfix_active_page') as ActivePage) || 'student_dashboard';
+  });
+  const [userRole, setUserRole] = useState<UserRole>(() => {
+    return (sessionStorage.getItem('campusfix_user_role') as UserRole) || 'student';
+  });
   const currentStudentId = 'stu_alex_c';
   const currentStudentName = 'Alex Chen (Sophomore)';
   const currentStaffName = 'Marcus Vance (Facilities Lead)';
 
   // App Data State
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(() => {
+    return sessionStorage.getItem('campusfix_selected_ticket') || null;
+  });
+  const [singleLoadedTicket, setSingleLoadedTicket] = useState<Ticket | null>(null);
   const [isLoadingTickets, setIsLoadingTickets] = useState(false);
   const [isResettingDemo, setIsResettingDemo] = useState(false);
 
@@ -79,7 +87,29 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 5000);
   };
 
-  // Load all tickets from server
+  // Sync role to API session header
+  const handleRoleChange = (newRole: UserRole) => {
+    setUserRole(newRole);
+    sessionStorage.setItem('campusfix_user_role', newRole);
+    if (newRole === 'staff') {
+      setActiveUserId('staff_marcus_v');
+    } else {
+      setActiveUserId(currentStudentId);
+    }
+  };
+
+  // Persist navigation and ticket selection across browser refreshes
+  useEffect(() => {
+    sessionStorage.setItem('campusfix_active_page', activePage);
+  }, [activePage]);
+
+  useEffect(() => {
+    if (selectedTicketId) {
+      sessionStorage.setItem('campusfix_selected_ticket', selectedTicketId);
+    }
+  }, [selectedTicketId]);
+
+  // Load all tickets from server according to authorized user session
   const loadTickets = useCallback(async () => {
     try {
       setIsLoadingTickets(true);
@@ -93,9 +123,28 @@ export default function App() {
     }
   }, []);
 
+  // Fetch when role or loadTickets changes
   useEffect(() => {
+    if (userRole === 'staff') {
+      setActiveUserId('staff_marcus_v');
+    } else {
+      setActiveUserId(currentStudentId);
+    }
     loadTickets();
-  }, [loadTickets]);
+  }, [userRole, loadTickets]);
+
+  // Retrieve single ticket state from persistent storage if selected
+  useEffect(() => {
+    if (selectedTicketId) {
+      fetchTicketById(selectedTicketId)
+        .then((ticket) => {
+          setSingleLoadedTicket(ticket);
+        })
+        .catch((err) => {
+          console.warn('Could not fetch single ticket:', err);
+        });
+    }
+  }, [selectedTicketId]);
 
   // Handler: Reset Demo Data
   const handleResetDemo = async () => {
@@ -103,6 +152,10 @@ export default function App() {
       setIsResettingDemo(true);
       const refreshed = await resetDemoData();
       setTickets(refreshed);
+      if (selectedTicketId) {
+        const found = refreshed.find((t) => t.ticketId === selectedTicketId);
+        if (found) setSingleLoadedTicket(found);
+      }
       showToast('Demonstration dataset reset to initial state with 4 sample tickets');
     } catch (err: any) {
       showToast(err.message || 'Failed to reset demo data', 'error');
@@ -261,8 +314,19 @@ export default function App() {
     try {
       setIsSubmittingTicket(true);
       const studentNote = `Student ${currentStudentName} joined tracking updates for this issue. Original complaint: "${candidateTicketData?.issueSummary}"`;
-      const updated = await trackExistingTicket(existingTicketId, currentStudentId, studentNote);
+      const updated = await trackExistingTicket(
+        existingTicketId, 
+        currentStudentId, 
+        studentNote,
+        candidateTicketData ? {
+          candidateSummary: candidateTicketData.issueSummary,
+          candidateLocation: candidateTicketData.reportedLocation,
+          candidateCategory: candidateTicketData.category,
+          candidateFacts: candidateTicketData.studentProvidedFacts,
+        } : undefined
+      );
 
+      setSingleLoadedTicket(updated);
       await loadTickets();
       setSelectedTicketId(existingTicketId);
       setActivePage('ticket_tracking');
@@ -297,6 +361,7 @@ export default function App() {
         relatedTicketId: duplicates.length > 0 ? duplicates[0].ticket.ticketId : undefined,
       });
 
+      setSingleLoadedTicket(created);
       await loadTickets();
       setSelectedTicketId(created.ticketId);
       setActivePage('ticket_tracking');
@@ -313,6 +378,7 @@ export default function App() {
     try {
       const author = userRole === 'staff' ? currentStaffName : currentStudentName;
       const updated = await addTicketNote(ticketId, author, userRole, message);
+      setSingleLoadedTicket(updated);
       setTickets((prev) => prev.map((t) => (t.ticketId === ticketId ? updated : t)));
       showToast('Field note added to ticket history');
     } catch (err: any) {
@@ -337,6 +403,7 @@ export default function App() {
         resolutionNotes,
       });
 
+      setSingleLoadedTicket(updated);
       setTickets((prev) => prev.map((t) => (t.ticketId === ticketId ? updated : t)));
       showToast(`Ticket ${ticketId} updated to ${newStatus}`);
     } finally {
@@ -344,7 +411,10 @@ export default function App() {
     }
   };
 
-  const selectedTicket = tickets.find((t) => t.ticketId === selectedTicketId);
+  const selectedTicket =
+    (singleLoadedTicket && singleLoadedTicket.ticketId === selectedTicketId)
+      ? singleLoadedTicket
+      : tickets.find((t) => t.ticketId === selectedTicketId);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 font-sans antialiased">
@@ -353,7 +423,7 @@ export default function App() {
         activePage={activePage}
         setActivePage={setActivePage}
         userRole={userRole}
-        setUserRole={setUserRole}
+        setUserRole={handleRoleChange}
         onResetDemoData={handleResetDemo}
         isResetting={isResettingDemo}
         selectedTicketId={selectedTicketId}

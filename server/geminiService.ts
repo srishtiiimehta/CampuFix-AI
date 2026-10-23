@@ -132,21 +132,28 @@ export async function detectDuplicateTickets(
   },
   existingTickets: Ticket[]
 ): Promise<DuplicateMatch[]> {
+  // Only compare against active (Open or In Progress) tickets
   const activeTickets = existingTickets.filter((t) => t.status !== 'Resolved');
 
   if (activeTickets.length === 0) {
     return [];
   }
 
+  // Filter to same category candidates first (different category cannot be duplicates)
+  const categoryCandidates = activeTickets.filter((t) => t.category === candidateTicket.category);
+  if (categoryCandidates.length === 0) {
+    return [];
+  }
+
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
-    return localDuplicateDetection(candidateTicket, activeTickets);
+    return localDuplicateDetection(candidateTicket, categoryCandidates);
   }
 
   try {
     const prompt = `You are a campus facility duplicate ticket evaluator.
-Compare this newly reported maintenance problem against existing active campus tickets:
+Compare this newly reported maintenance problem against existing active campus tickets in the same category (${candidateTicket.category}):
 
 NEW REPORT:
 - Category: ${candidateTicket.category}
@@ -155,7 +162,7 @@ NEW REPORT:
 - Details: ${candidateTicket.details}
 
 EXISTING ACTIVE TICKETS:
-${activeTickets
+${categoryCandidates
   .map(
     (t, idx) => `[${idx}] TicketID: ${t.ticketId}
 Category: ${t.category}
@@ -166,7 +173,8 @@ Priority: ${t.priority}`
   )
   .join('\n\n')}
 
-Analyze whether any of the existing tickets describe the SAME physical incident or immediate location.
+Analyze whether any existing ticket describes the SAME physical incident or immediate location.
+Do NOT consider every ticket in the same category a duplicate. If they are in different rooms, different buildings, or describe unrelated equipment, do not flag them.
 Return a JSON array of matches that have a similarityScore >= 60 (scale 0-100). If none match, return an empty array [].
 
 JSON format:
@@ -174,7 +182,7 @@ JSON format:
   {
     "ticketId": "string (the matching ticket ID)",
     "similarityScore": number (60-100),
-    "matchReason": "Clear 1-2 sentence explanation of why this appears to be the same underlying issue",
+    "reasonForMatch": "Clear 1-2 sentence explanation of why this appears to be the same underlying physical issue or shared location",
     "recommendation": "track_existing"
   }
 ]`;
@@ -198,13 +206,20 @@ JSON format:
 
     const results: DuplicateMatch[] = [];
     for (const match of parsedMatches) {
-      const matchedTicket = activeTickets.find((t) => t.ticketId === match.ticketId);
+      const matchedTicket = categoryCandidates.find((t) => t.ticketId === match.ticketId);
       if (matchedTicket) {
+        const reason = match.reasonForMatch || match.matchReason || `Matches category and location in ${matchedTicket.reportedLocation}.`;
         results.push({
-          ticket: matchedTicket,
+          ticketId: matchedTicket.ticketId,
+          category: matchedTicket.category,
+          issueSummary: matchedTicket.issueSummary,
+          reportedLocation: matchedTicket.reportedLocation,
+          status: matchedTicket.status,
+          reasonForMatch: reason,
+          matchReason: reason,
           similarityScore: Math.min(100, Math.max(0, Number(match.similarityScore) || 75)),
-          matchReason: match.matchReason || 'Matches category and campus location of existing ticket.',
           recommendation: match.recommendation === 'separate_issue' ? 'separate_issue' : 'track_existing',
+          ticket: matchedTicket,
         });
       }
     }
@@ -212,7 +227,7 @@ JSON format:
     return results;
   } catch (error) {
     console.error('Gemini duplicate check failed, using local fallback:', error);
-    return localDuplicateDetection(candidateTicket, activeTickets);
+    return localDuplicateDetection(candidateTicket, categoryCandidates);
   }
 }
 
@@ -356,47 +371,112 @@ function localDuplicateDetection(
   const candidateCat = candidate.category;
   const candidateSummary = candidate.issueSummary.toLowerCase();
 
+  // Known campus buildings
+  const buildings = [
+    { key: 'library', patterns: ['library', 'lib', 'commons'] },
+    { key: 'science', patterns: ['science complex', 'science hall', 'chem lab', 'chemistry'] },
+    { key: 'engineering', patterns: ['engineering hall', 'engineering', 'eng hall', 'lecture hall 202'] },
+    { key: 'activity_center', patterns: ['student activity center', 'sac', 'concourse', 'cafeteria'] },
+    { key: 'dormitory', patterns: ['dorm', 'hall tower', 'residence', 'quad'] },
+  ];
+
+  const getBuildingKey = (loc: string) => {
+    for (const b of buildings) {
+      if (b.patterns.some((p) => loc.includes(p))) {
+        return b.key;
+      }
+    }
+    return null;
+  };
+
+  const candidateBuilding = getBuildingKey(candidateLoc);
+
   for (const existing of activeTickets) {
+    // 1. Strict category gate: different category cannot be duplicates
     if (existing.category !== candidateCat) continue;
 
-    let score = 0;
+    // 2. Do not consider resolved tickets
+    if (existing.status === 'Resolved') continue;
+
     const existingLoc = existing.reportedLocation.toLowerCase();
     const existingSummary = existing.issueSummary.toLowerCase();
+    const existingBuilding = getBuildingKey(existingLoc);
 
-    // Check location overlap
-    if (candidateLoc && existingLoc) {
-      if (candidateLoc.includes('library') && existingLoc.includes('library')) {
-        score += 50;
-        if (
-          (candidateLoc.includes('2') || candidateLoc.includes('second')) &&
-          (existingLoc.includes('2') || existingLoc.includes('second'))
-        ) {
-          score += 35;
-        }
-      } else if (candidateLoc === existingLoc) {
-        score += 80;
+    let locationScore = 0;
+
+    // Building mismatch check
+    if (candidateBuilding && existingBuilding) {
+      if (candidateBuilding !== existingBuilding) {
+        // Different buildings on campus cannot be duplicates of the same physical defect!
+        continue;
+      } else {
+        locationScore += 45;
+      }
+    } else if (candidateLoc && existingLoc) {
+      if (candidateLoc === existingLoc) {
+        locationScore += 60;
       } else if (candidateLoc.includes(existingLoc) || existingLoc.includes(candidateLoc)) {
-        score += 60;
+        locationScore += 40;
       }
     }
 
-    // Check keyword overlap
+    // Floor / Room / Specific area match bonus
+    const floorPatterns = ['1st', '2nd', '3rd', '4th', 'ground', 'first', 'second', 'third', 'room 104', 'room 202', 'pods'];
+    for (const fp of floorPatterns) {
+      if (candidateLoc.includes(fp) && existingLoc.includes(fp)) {
+        locationScore += 30;
+        break;
+      }
+    }
+
+    // 3. Issue summary symptom overlap
+    let symptomScore = 0;
+    const symptomKeywords = [
+      'wifi', 'wi-fi', 'eduroam', 'internet', 'disconnect', 'latency', 'ping', 'network',
+      'leak', 'leaking', 'spray', 'pipe', 'water', 'flood', 'basin', 'valve', 'shutoff',
+      'flicker', 'buzz', 'outlet', 'spark', 'breaker', 'power', 'light', 'ballast',
+      'spill', 'glass', 'shatter', 'tile', 'slip', 'trash', 'odor', 'clean', 'stain'
+    ];
+
+    const matchedSymptomWords: string[] = [];
+    for (const kw of symptomKeywords) {
+      if (candidateSummary.includes(kw) && existingSummary.includes(kw)) {
+        symptomScore += 20;
+        matchedSymptomWords.push(kw);
+      }
+    }
+
+    // General token overlap
     const words = candidateSummary.split(/\s+/).filter((w) => w.length > 4);
     for (const w of words) {
-      if (existingSummary.includes(w)) {
-        score += 10;
+      if (existingSummary.includes(w) && !matchedSymptomWords.includes(w)) {
+        symptomScore += 8;
       }
     }
 
-    if (score >= 60) {
+    const totalScore = Math.min(95, locationScore + symptomScore);
+
+    // Only flag as possible duplicate if BOTH location and issue have genuine correlation (score >= 60)
+    // "Do not consider every ticket in the same category a duplicate."
+    if (totalScore >= 60 && locationScore >= 40) {
+      const reasonForMatch = `Both tickets report ${candidateCat} defects in ${existing.reportedLocation} describing ${matchedSymptomWords.length > 0 ? matchedSymptomWords.join(', ') : 'similar symptoms'}.`;
+
       matches.push({
-        ticket: existing,
-        similarityScore: Math.min(95, score),
-        matchReason: `Both tickets report ${candidateCat} problems in or near ${existing.reportedLocation}.`,
+        ticketId: existing.ticketId,
+        category: existing.category,
+        issueSummary: existing.issueSummary,
+        reportedLocation: existing.reportedLocation,
+        status: existing.status,
+        reasonForMatch,
+        matchReason: reasonForMatch,
+        similarityScore: totalScore,
         recommendation: 'track_existing',
+        ticket: existing,
       });
     }
   }
 
-  return matches;
+  // Sort by highest similarity score
+  return matches.sort((a, b) => b.similarityScore - a.similarityScore);
 }
+
