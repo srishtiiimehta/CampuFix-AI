@@ -6,7 +6,8 @@ import {
   DuplicateMatch, 
   TicketCategory, 
   TicketPriority, 
-  TicketStatus 
+  TicketStatus,
+  DepartmentName
 } from './types/ticket';
 import { 
   fetchTickets, 
@@ -28,6 +29,7 @@ import { DuplicateReviewModal } from './components/DuplicateReviewModal';
 import { TicketTrackingView } from './components/TicketTrackingView';
 import { StaffDashboard } from './components/StaffDashboard';
 import { StaffTicketDetailModal } from './components/StaffTicketDetailModal';
+import { E2ETestModal } from './components/E2ETestModal';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function App() {
@@ -70,6 +72,8 @@ export default function App() {
   // Staff Modal State
   const [staffModalTicket, setStaffModalTicket] = useState<Ticket | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isE2EModalOpen, setIsE2EModalOpen] = useState(false);
+  const [isRefreshingTicket, setIsRefreshingTicket] = useState(false);
 
   // Global Notification
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -320,12 +324,14 @@ export default function App() {
     }
   };
 
-  // Handler: Staff Status Update
+  // Handler: Staff Status & Ticket Management Update
   const handleStaffUpdateStatus = async (
     ticketId: string,
     newStatus: TicketStatus,
     notes: string,
-    resolutionNotes?: string
+    resolutionNotes?: string,
+    assignedDepartment?: DepartmentName,
+    staffNote?: string
   ) => {
     try {
       setIsUpdatingStatus(true);
@@ -335,12 +341,32 @@ export default function App() {
         role: 'staff',
         notes,
         resolutionNotes,
+        assignedDepartment,
+        staffNote,
       });
 
       setTickets((prev) => prev.map((t) => (t.ticketId === ticketId ? updated : t)));
-      showToast(`Ticket ${ticketId} updated to ${newStatus}`);
+      setStaffModalTicket(null);
+      showToast(`Work order ${ticketId} updated to ${newStatus}${assignedDepartment ? ` (${assignedDepartment})` : ''}!`);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update ticket status', 'error');
+      throw err;
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  // Handler: Student / Viewer Refresh Ticket
+  const handleRefreshTicket = async (ticketId: string) => {
+    try {
+      setIsRefreshingTicket(true);
+      const fresh = await fetchTicketById(ticketId);
+      setTickets((prev) => prev.map((t) => (t.ticketId === ticketId ? fresh : t)));
+      showToast(`Refreshed live status for ticket ${ticketId}`);
+    } catch (err: any) {
+      showToast('Could not refresh ticket from server', 'error');
+    } finally {
+      setIsRefreshingTicket(false);
     }
   };
 
@@ -490,6 +516,8 @@ export default function App() {
               onAddNote={handleAddTicketNote}
               isAddingNote={false}
               onOpenStaffControls={() => setStaffModalTicket(selectedTicket)}
+              onRefreshTicket={() => handleRefreshTicket(selectedTicket.ticketId)}
+              isRefreshing={isRefreshingTicket}
             />
           ) : (
             <div className="bg-white rounded-xl border border-slate-200 p-12 text-center max-w-md mx-auto space-y-3">
@@ -514,6 +542,7 @@ export default function App() {
               setSelectedTicketId(id);
               setActivePage('ticket_tracking');
             }}
+            onRunE2ETest={() => setIsE2EModalOpen(true)}
           />
         )}
 
@@ -524,6 +553,22 @@ export default function App() {
             onClose={() => setStaffModalTicket(null)}
             onUpdateStatus={handleStaffUpdateStatus}
             isUpdating={isUpdatingStatus}
+          />
+        )}
+
+        {/* Automated E2E Audit Test Modal */}
+        {isE2EModalOpen && (
+          <E2ETestModal
+            onClose={() => setIsE2EModalOpen(false)}
+            onTestComplete={async (ticketId) => {
+              await loadTickets();
+              setSelectedTicketId(ticketId);
+            }}
+            onViewStudentTracking={(ticketId) => {
+              setSelectedTicketId(ticketId);
+              setUserRole('student');
+              setActivePage('ticket_tracking');
+            }}
           />
         )}
       </main>

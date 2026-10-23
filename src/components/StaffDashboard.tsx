@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Ticket, TicketCategory, TicketPriority, TicketStatus } from '../types/ticket';
+import React, { useState, useMemo } from 'react';
+import { Ticket, TicketCategory, TicketPriority, TicketStatus, DepartmentName } from '../types/ticket';
 import { StatusBadge, PriorityBadge, CategoryIcon } from './Badge';
 import { 
   Search, 
@@ -14,26 +14,34 @@ import {
   User, 
   ExternalLink,
   ChevronRight,
-  ShieldAlert
+  ShieldAlert,
+  Link as LinkIcon,
+  Users,
+  RotateCcw,
+  SlidersHorizontal,
+  PlayCircle
 } from 'lucide-react';
 
 interface StaffDashboardProps {
   tickets: Ticket[];
   onOpenTicketDetails: (ticket: Ticket) => void;
   onViewStudentTracking: (ticketId: string) => void;
+  onRunE2ETest?: () => void;
 }
 
 export const StaffDashboard: React.FC<StaffDashboardProps> = ({
   tickets,
   onOpenTicketDetails,
   onViewStudentTracking,
+  onRunE2ETest,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<TicketCategory | 'All'>('All');
   const [priorityFilter, setPriorityFilter] = useState<TicketPriority | 'All'>('All');
+  const [departmentFilter, setDepartmentFilter] = useState<DepartmentName | 'All'>('All');
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'All'>('All');
 
-  // Metrics
+  // Exact metric counts derived directly from live stored ticket data
   const totalCount = tickets.length;
   const openCount = tickets.filter((t) => t.status === 'Open').length;
   const inProgressCount = tickets.filter((t) => t.status === 'In Progress').length;
@@ -41,26 +49,45 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
   const safetyCount = tickets.filter((t) => t.isSafetyHazard && t.status !== 'Resolved').length;
 
   // Filtered tickets
-  const filteredTickets = tickets.filter((t) => {
-    const matchesCategory = categoryFilter === 'All' || t.category === categoryFilter;
-    const matchesPriority = priorityFilter === 'All' || t.priority === priorityFilter;
-    const matchesStatus = statusFilter === 'All' || t.status === statusFilter;
-    const q = searchQuery.toLowerCase();
-    const matchesSearch =
-      q === '' ||
-      t.ticketId.toLowerCase().includes(q) ||
-      t.issueSummary.toLowerCase().includes(q) ||
-      t.reportedLocation.toLowerCase().includes(q) ||
-      t.assignedDepartment.toLowerCase().includes(q) ||
-      t.reporterName.toLowerCase().includes(q);
+  const filteredTickets = useMemo(() => {
+    return tickets.filter((t) => {
+      const matchesCategory = categoryFilter === 'All' || t.category === categoryFilter;
+      const matchesPriority = priorityFilter === 'All' || t.priority === priorityFilter;
+      const matchesDepartment = departmentFilter === 'All' || t.assignedDepartment === departmentFilter;
+      const matchesStatus = statusFilter === 'All' || t.status === statusFilter;
+      
+      const q = searchQuery.trim().toLowerCase();
+      const matchesSearch =
+        q === '' ||
+        t.ticketId.toLowerCase().includes(q) ||
+        t.issueSummary.toLowerCase().includes(q) ||
+        t.reportedLocation.toLowerCase().includes(q) ||
+        t.assignedDepartment.toLowerCase().includes(q) ||
+        t.reporterName.toLowerCase().includes(q);
 
-    return matchesCategory && matchesPriority && matchesStatus && matchesSearch;
-  });
+      return matchesCategory && matchesPriority && matchesDepartment && matchesStatus && matchesSearch;
+    });
+  }, [tickets, categoryFilter, priorityFilter, departmentFilter, statusFilter, searchQuery]);
+
+  const hasActiveFilters = 
+    searchQuery !== '' || 
+    categoryFilter !== 'All' || 
+    priorityFilter !== 'All' || 
+    departmentFilter !== 'All' || 
+    statusFilter !== 'All';
+
+  const resetAllFilters = () => {
+    setSearchQuery('');
+    setCategoryFilter('All');
+    setPriorityFilter('All');
+    setDepartmentFilter('All');
+    setStatusFilter('All');
+  };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Staff Header & KPI strip */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 md:p-8">
+      <div className="bg-white rounded-xl border border-slate-200 p-6 md:p-8 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -71,78 +98,124 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
               Staff Maintenance Dashboard
             </h1>
             <p className="text-xs md:text-sm text-slate-500 mt-1">
-              Logged in as Marcus Vance (Facility Operations Lead). Triage incoming Gemini-diagnosed reports, dispatch field technicians, and verify resolution notes.
+              Logged in as Marcus Vance (Facilities Lead). Real-time ticket management, technician dispatch, department reassignment, and formal verification sign-off.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {onRunE2ETest && (
+              <button
+                onClick={onRunE2ETest}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-800 text-xs font-semibold transition-colors cursor-pointer"
+                title="Run full 8-step automated verification test"
+              >
+                <PlayCircle className="w-3.5 h-3.5 text-teal-600" />
+                <span>Run E2E Audit Test</span>
+              </button>
+            )}
+            <span className="text-xs font-mono font-medium text-slate-700 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
               Role: Authorized Staff
             </span>
           </div>
         </div>
 
-        {/* 5 KPI Stat Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-6">
-          <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
-            <div className="text-[11px] font-semibold text-slate-500 uppercase">Total Tickets</div>
-            <div className="text-2xl font-bold text-slate-900 mt-0.5 tabular-nums font-mono">{totalCount}</div>
-            <div className="text-[11px] text-slate-400">All campus departments</div>
+        {/* 4 Core Required Metrics + Safety Hazard Monitor */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-6">
+          {/* Total Tickets */}
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+              Total Tickets
+            </div>
+            <div className="text-2xl font-bold text-slate-900 mt-1 tabular-nums font-mono">
+              {totalCount}
+            </div>
+            <div className="text-[11px] text-slate-400 mt-0.5">Across all facilities</div>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-amber-50/60 border border-amber-200">
-            <div className="text-[11px] font-semibold text-amber-800 uppercase">Open / Queued</div>
-            <div className="text-2xl font-bold text-amber-900 mt-0.5 tabular-nums font-mono">{openCount}</div>
-            <div className="text-[11px] text-amber-700">Awaiting technician dispatch</div>
+          {/* Open Tickets */}
+          <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200">
+            <div className="text-[11px] font-semibold text-amber-800 uppercase tracking-wide flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5 text-amber-600" />
+              <span>Open Tickets</span>
+            </div>
+            <div className="text-2xl font-bold text-amber-900 mt-1 tabular-nums font-mono">
+              {openCount}
+            </div>
+            <div className="text-[11px] text-amber-700 mt-0.5">Awaiting crew assignment</div>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-cyan-50/60 border border-cyan-200">
-            <div className="text-[11px] font-semibold text-cyan-800 uppercase">In Progress</div>
-            <div className="text-2xl font-bold text-cyan-900 mt-0.5 tabular-nums font-mono">{inProgressCount}</div>
-            <div className="text-[11px] text-cyan-700">Crews actively on site</div>
+          {/* In-Progress Tickets */}
+          <div className="p-4 rounded-xl bg-cyan-50/70 border border-cyan-200">
+            <div className="text-[11px] font-semibold text-cyan-800 uppercase tracking-wide flex items-center gap-1">
+              <AlertCircle className="w-3.5 h-3.5 text-cyan-600" />
+              <span>In-Progress Tickets</span>
+            </div>
+            <div className="text-2xl font-bold text-cyan-900 mt-1 tabular-nums font-mono">
+              {inProgressCount}
+            </div>
+            <div className="text-[11px] text-cyan-700 mt-0.5">Active field dispatch</div>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-emerald-50/60 border border-emerald-200">
-            <div className="text-[11px] font-semibold text-emerald-800 uppercase">Resolved</div>
-            <div className="text-2xl font-bold text-emerald-900 mt-0.5 tabular-nums font-mono">{resolvedCount}</div>
-            <div className="text-[11px] text-emerald-700">Signed off with notes</div>
+          {/* Resolved Tickets */}
+          <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200">
+            <div className="text-[11px] font-semibold text-emerald-800 uppercase tracking-wide flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Resolved Tickets</span>
+            </div>
+            <div className="text-2xl font-bold text-emerald-900 mt-1 tabular-nums font-mono">
+              {resolvedCount}
+            </div>
+            <div className="text-[11px] text-emerald-700 mt-0.5">Verified with notes</div>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-rose-50/60 border border-rose-200 col-span-2 sm:col-span-1">
-            <div className="text-[11px] font-semibold text-rose-800 uppercase flex items-center gap-1">
-              <Flame className="w-3 h-3 text-rose-600" />
+          {/* Safety Alert Tickets */}
+          <div className="p-4 rounded-xl bg-rose-50/70 border border-rose-200 col-span-2 sm:col-span-1">
+            <div className="text-[11px] font-semibold text-rose-800 uppercase tracking-wide flex items-center gap-1">
+              <Flame className="w-3.5 h-3.5 text-rose-600" />
               <span>Safety Alerts</span>
             </div>
-            <div className="text-2xl font-bold text-rose-900 mt-0.5 tabular-nums font-mono">{safetyCount}</div>
-            <div className="text-[11px] text-rose-700">Urgent physical risk</div>
+            <div className="text-2xl font-bold text-rose-900 mt-1 tabular-nums font-mono">
+              {safetyCount}
+            </div>
+            <div className="text-[11px] text-rose-700 mt-0.5">Urgent priority risk</div>
           </div>
         </div>
       </div>
 
-      {/* Filters and Controls */}
+      {/* Filters and Search Bar */}
       <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           {/* Search box */}
-          <div className="relative flex-1 max-w-md">
+          <div className="relative flex-1 max-w-lg">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search by ticket ID, building, keyword, reporter..."
+              placeholder="Search by ticket ID (e.g. TKT-2025-...), summary, location, department, student..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900"
+              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900 bg-white"
             />
           </div>
 
-          {/* Quick filter summary */}
-          <div className="text-xs text-slate-500 font-medium">
-            Showing <span className="text-slate-900 font-bold tabular-nums">{filteredTickets.length}</span> of {tickets.length} tickets
+          <div className="flex items-center gap-3">
+            {hasActiveFilters && (
+              <button
+                onClick={resetAllFilters}
+                className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 transition-colors font-medium cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset Filters</span>
+              </button>
+            )}
+            <div className="text-xs text-slate-500 font-medium">
+              Showing <span className="text-slate-900 font-bold tabular-nums">{filteredTickets.length}</span> of {tickets.length} tickets
+            </div>
           </div>
         </div>
 
-        {/* Filter Dropdowns / Segmented selectors */}
-        <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* Category Filter */}
+        {/* 4 Required Filters: Category, Priority, Department, Status */}
+        <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* 1. Category Filter */}
           <div>
             <label className="text-[11px] font-semibold text-slate-600 uppercase block mb-1">
               Category
@@ -150,9 +223,9 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value as any)}
-              className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
             >
-              <option value="All">All Categories (4 Allowed)</option>
+              <option value="All">All Categories (4)</option>
               <option value="Plumbing">Plumbing</option>
               <option value="Electricity">Electricity</option>
               <option value="Cleanliness">Cleanliness</option>
@@ -160,15 +233,15 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
             </select>
           </div>
 
-          {/* Priority Filter */}
+          {/* 2. Priority Filter */}
           <div>
             <label className="text-[11px] font-semibold text-slate-600 uppercase block mb-1">
-              Priority Level
+              Priority
             </label>
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value as any)}
-              className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
             >
               <option value="All">All Priorities</option>
               <option value="Critical">Critical</option>
@@ -178,15 +251,33 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
             </select>
           </div>
 
-          {/* Status Filter */}
+          {/* 3. Department Filter */}
           <div>
             <label className="text-[11px] font-semibold text-slate-600 uppercase block mb-1">
-              Progress Status
+              Assigned Department
+            </label>
+            <select
+              value={departmentFilter}
+              onChange={(e) => setDepartmentFilter(e.target.value as any)}
+              className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
+            >
+              <option value="All">All Departments (4)</option>
+              <option value="Plumbing / Water Maintenance">Plumbing / Water Maintenance</option>
+              <option value="Electrical Maintenance">Electrical Maintenance</option>
+              <option value="Housekeeping / Sanitation">Housekeeping / Sanitation</option>
+              <option value="IT / Network Support">IT / Network Support</option>
+            </select>
+          </div>
+
+          {/* 4. Status Filter */}
+          <div>
+            <label className="text-[11px] font-semibold text-slate-600 uppercase block mb-1">
+              Current Status
             </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
             >
               <option value="All">All Statuses</option>
               <option value="Open">Open</option>
@@ -197,115 +288,192 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
         </div>
       </div>
 
-      {/* Tickets Table / List */}
+      {/* Main Ticket Table Viewport (Clean administrative table with responsive horizontal scroll) */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-        <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-            Work Orders & Dispatch Queue
-          </h2>
+        <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-2">
+              <span>Campus Facility Work Order Table</span>
+              <span className="text-[11px] font-mono text-slate-500 font-normal">
+                ({filteredTickets.length} records)
+              </span>
+            </h2>
+          </div>
           <span className="text-[11px] text-slate-400 font-mono">
-            Sorted by recent updates
+            Click &quot;Manage&quot; to inspect details, reassign department, or update status
           </span>
         </div>
 
         {filteredTickets.length === 0 ? (
-          <div className="p-12 text-center text-slate-500 text-xs">
-            No maintenance tickets match the selected filters.
+          <div className="p-12 text-center space-y-3">
+            <p className="text-xs text-slate-500 font-medium">
+              No tickets match your filter criteria.
+            </p>
+            {hasActiveFilters && (
+              <button
+                onClick={resetAllFilters}
+                className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+              >
+                Clear all filters
+              </button>
+            )}
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
-            {filteredTickets.map((t) => (
-              <div
-                key={t.ticketId}
-                className="p-5 hover:bg-slate-50/70 transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-4"
-              >
-                {/* Left ticket overview */}
-                <div className="space-y-1.5 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap text-xs">
-                    <span className="font-mono font-bold text-slate-900">{t.ticketId}</span>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse min-w-[950px]">
+              <thead>
+                <tr className="bg-slate-100/75 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+                  <th scope="col" className="py-3 px-4">Ticket ID</th>
+                  <th scope="col" className="py-3 px-4">Category</th>
+                  <th scope="col" className="py-3 px-4">Issue Summary</th>
+                  <th scope="col" className="py-3 px-4">Location</th>
+                  <th scope="col" className="py-3 px-4">Priority</th>
+                  <th scope="col" className="py-3 px-4">Assigned Department</th>
+                  <th scope="col" className="py-3 px-4">Status</th>
+                  <th scope="col" className="py-3 px-4">Created Time</th>
+                  <th scope="col" className="py-3 px-4">Duplicate / Links</th>
+                  <th scope="col" className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredTickets.map((t) => {
+                  const hasDuplicateLink = !!t.relatedTicketId;
+                  const hasSubscribers = t.trackedBy && t.trackedBy.length > 1;
 
-                    {t.isDemo && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
-                        DEMO
-                      </span>
-                    )}
+                  return (
+                    <tr
+                      key={t.ticketId}
+                      className="hover:bg-slate-50/80 transition-colors group"
+                    >
+                      {/* 1. Ticket ID */}
+                      <td className="py-3.5 px-4 font-mono font-bold text-slate-900 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <span>{t.ticketId}</span>
+                          {t.isSafetyHazard && (
+                            <span 
+                              className="text-rose-600" 
+                              title={`Safety Hazard: ${t.safetyWarning || 'Urgent attention required'}`}
+                            >
+                              <Flame className="w-3.5 h-3.5" />
+                            </span>
+                          )}
+                        </div>
+                      </td>
 
-                    <span className="text-slate-300">·</span>
+                      {/* 2. Category */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 font-semibold text-slate-800">
+                          <CategoryIcon category={t.category} className="w-4 h-4" />
+                          <span>{t.category}</span>
+                        </div>
+                      </td>
 
-                    <div className="flex items-center gap-1 font-semibold text-slate-800">
-                      <CategoryIcon category={t.category} className="w-3.5 h-3.5" />
-                      <span>{t.category}</span>
-                    </div>
+                      {/* 3. Issue Summary */}
+                      <td className="py-3.5 px-4 max-w-xs">
+                        <div className="font-semibold text-slate-900 line-clamp-2 leading-snug">
+                          {t.issueSummary}
+                        </div>
+                        {t.status === 'Resolved' && t.resolutionNotes && (
+                          <div className="text-[11px] text-emerald-700 font-medium line-clamp-1 mt-0.5">
+                            ✓ {t.resolutionNotes}
+                          </div>
+                        )}
+                      </td>
 
-                    <span className="text-slate-300">·</span>
+                      {/* 4. Location */}
+                      <td className="py-3.5 px-4 whitespace-nowrap text-slate-700">
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="font-medium">{t.reportedLocation}</span>
+                        </div>
+                      </td>
 
-                    <StatusBadge status={t.status} size="sm" />
+                      {/* 5. Priority */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <PriorityBadge priority={t.priority} size="sm" />
+                      </td>
 
-                    <PriorityBadge priority={t.priority} size="sm" />
+                      {/* 6. Assigned Department */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="inline-block px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 font-medium text-[11px] border border-slate-200/80">
+                          {t.assignedDepartment}
+                        </span>
+                      </td>
 
-                    {t.isSafetyHazard && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
-                        <Flame className="w-3 h-3 text-rose-600" />
-                        HAZARD
-                      </span>
-                    )}
-                  </div>
+                      {/* 7. Current Status */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <StatusBadge status={t.status} size="sm" />
+                      </td>
 
-                  <h3 className="text-sm font-semibold text-slate-900 leading-snug">
-                    {t.issueSummary}
-                  </h3>
+                      {/* 8. Creation Time */}
+                      <td className="py-3.5 px-4 whitespace-nowrap text-slate-500 font-mono text-[11px]">
+                        {new Date(t.createdAt).toLocaleDateString(undefined, {
+                          month: 'short',
+                          day: 'numeric',
+                        })}{' '}
+                        {new Date(t.createdAt).toLocaleTimeString(undefined, {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </td>
 
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                    <div className="flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{t.reportedLocation}</span>
-                    </div>
+                      {/* 9. Possible Duplicate Indicator */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        {hasDuplicateLink ? (
+                          <span 
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200"
+                            title={`Linked to original ticket: ${t.relatedTicketId}`}
+                          >
+                            <LinkIcon className="w-3 h-3 text-indigo-500" />
+                            <span>Linked ({t.relatedTicketId})</span>
+                          </span>
+                        ) : hasSubscribers ? (
+                          <span 
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
+                            title={`${t.trackedBy.length} students reported/tracking this same issue`}
+                          >
+                            <Users className="w-3 h-3 text-amber-600" />
+                            <span>Merged ({t.trackedBy.length})</span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-[11px]">—</span>
+                        )}
+                      </td>
 
-                    <span className="text-slate-300">·</span>
-
-                    <div className="text-slate-600 font-medium">
-                      {t.assignedDepartment}
-                    </div>
-
-                    <span className="text-slate-300">·</span>
-
-                    <div className="flex items-center gap-1 text-slate-400">
-                      <User className="w-3 h-3" />
-                      <span>{t.reporterName}</span>
-                    </div>
-                  </div>
-
-                  {/* Resolution Notes display if resolved */}
-                  {t.status === 'Resolved' && t.resolutionNotes && (
-                    <div className="mt-2 text-xs text-emerald-800 bg-emerald-50/60 p-2 rounded border border-emerald-100">
-                      <span className="font-semibold">Resolution Note: </span>
-                      {t.resolutionNotes}
-                    </div>
-                  )}
-                </div>
-
-                {/* Right Actions */}
-                <div className="flex items-center gap-2 shrink-0 self-end lg:self-center">
-                  <button
-                    onClick={() => onViewStudentTracking(t.ticketId)}
-                    className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
-                    title="View public student tracking page"
-                  >
-                    Track View
-                  </button>
-
-                  <button
-                    onClick={() => onOpenTicketDetails(t)}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-colors cursor-pointer"
-                  >
-                    <Wrench className="w-3.5 h-3.5 text-teal-400" />
-                    <span>Manage Status</span>
-                  </button>
-                </div>
-              </div>
-            ))}
+                      {/* 10. Actions */}
+                      <td className="py-3.5 px-4 whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => onViewStudentTracking(t.ticketId)}
+                            className="px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 hover:text-slate-900 bg-white border border-slate-200 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
+                            title="Open student tracking page"
+                          >
+                            Student View
+                          </button>
+                          <button
+                            onClick={() => onOpenTicketDetails(t)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold rounded-md bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-colors cursor-pointer"
+                          >
+                            <Wrench className="w-3 h-3 text-teal-400" />
+                            <span>Manage</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
+      </div>
+
+      {/* Mobile-Friendly Cards for smaller screens when viewport is restricted */}
+      <div className="block md:hidden bg-slate-50 border border-slate-200 rounded-xl p-4 text-center text-xs text-slate-500">
+        <p className="font-semibold text-slate-700 mb-1">
+          Horizontal scroll enabled for administrative table above
+        </p>
+        <p>Swipe left/right on table to inspect all columns, or select &quot;Manage&quot; to review full details.</p>
       </div>
     </div>
   );

@@ -1,5 +1,141 @@
 [
   {
+    "ticketId": "TKT-2026-3139",
+    "reporterId": "stu_emma_99",
+    "reporterName": "Emma Watson (Junior)",
+    "reporterRole": "student",
+    "category": "Plumbing",
+    "assignedDepartment": "Plumbing / Water Maintenance",
+    "issueSummary": "Water pipe leaking under washbasin in Science Complex B 3rd floor",
+    "reportedLocation": "Science Complex B - Room 302",
+    "reportedTime": "2026-10-23T12:37:05.353Z",
+    "priority": "High",
+    "imageObservations": "",
+    "studentProvidedFacts": [
+      "Water pipe leaking under washbasin in Science Complex B 3rd floor",
+      "Small puddle forming near entrance door"
+    ],
+    "visualObservations": [
+      "Visible continuous drip from pipe P-trap coupling"
+    ],
+    "aiInferences": [
+      "High priority: Prevent water pooling from seeping into lower electrical risers"
+    ],
+    "missingInformation": "",
+    "status": "Resolved",
+    "createdAt": "2026-10-23T12:37:05.353Z",
+    "updatedAt": "2026-10-23T12:37:05.357Z",
+    "statusHistory": [
+      {
+        "id": "hist-1792759025353-kvho",
+        "timestamp": "2026-10-23T12:37:05.353Z",
+        "status": "Open",
+        "updatedBy": "Emma Watson (Junior)",
+        "role": "student",
+        "notes": "Initial ticket generated and submitted via CampusFix AI."
+      },
+      {
+        "id": "hist-1792759025354-hq2y",
+        "timestamp": "2026-10-23T12:37:05.354Z",
+        "status": "In Progress",
+        "updatedBy": "Marcus Vance (Facilities Lead)",
+        "role": "staff",
+        "notes": "Dispatched campus plumbing technician team with replacement PVC fittings."
+      },
+      {
+        "id": "hist-1792759025357-7oln",
+        "timestamp": "2026-10-23T12:37:05.357Z",
+        "status": "Resolved",
+        "updatedBy": "Marcus Vance (Facilities Lead)",
+        "role": "staff",
+        "notes": "Work verified and completed by senior campus technician."
+      }
+    ],
+    "trackedBy": [
+      "stu_emma_99"
+    ],
+    "isSafetyHazard": false,
+    "isDemo": false,
+    "notesThread": [
+      {
+        "id": "note-1792759025355-v34h",
+        "author": "Marcus Vance (Facilities Lead)",
+        "role": "staff",
+        "timestamp": "2026-10-23T12:37:05.355Z",
+        "message": "Plumbing crew on site at 09:30 AM; isolated isolation valve; replacing compromised rubber seal."
+      }
+    ],
+    "resolutionNotes": "Replaced degraded P-trap compression gasket on sink #3. Pressure tested lines at 50 PSI for 15 minutes. No further leakage detected. Area sanitized and dried."
+  },
+  {
+    "ticketId": "TKT-2026-8038",
+    "reporterId": "stu_emma_99",
+    "reporterName": "Emma Watson (Junior)",
+    "reporterRole": "student",
+    "category": "Plumbing",
+    "assignedDepartment": "Plumbing / Water Maintenance",
+    "issueSummary": "Water pipe leaking under washbasin in Science Complex B 3rd floor",
+    "reportedLocation": "Science Complex B - Room 302",
+    "reportedTime": "2026-10-23T12:34:41.164Z",
+    "priority": "High",
+    "imageObservations": "",
+    "studentProvidedFacts": [
+      "Water pipe leaking under washbasin in Science Complex B 3rd floor",
+      "Small puddle forming near entrance door"
+    ],
+    "visualObservations": [
+      "Visible continuous drip from pipe P-trap coupling"
+    ],
+    "aiInferences": [
+      "High priority: Prevent water pooling from seeping into lower electrical risers"
+    ],
+    "missingInformation": "",
+    "status": "Resolved",
+    "createdAt": "2026-10-23T12:34:41.164Z",
+    "updatedAt": "2026-10-23T12:34:41.169Z",
+    "statusHistory": [
+      {
+        "id": "hist-1792758881164-69ej",
+        "timestamp": "2026-10-23T12:34:41.164Z",
+        "status": "Open",
+        "updatedBy": "Emma Watson (Junior)",
+        "role": "student",
+        "notes": "Initial ticket generated and submitted via CampusFix AI."
+      },
+      {
+        "id": "hist-1792758881167-xazt",
+        "timestamp": "2026-10-23T12:34:41.167Z",
+        "status": "In Progress",
+        "updatedBy": "Marcus Vance (Facilities Lead)",
+        "role": "staff",
+        "notes": "Dispatched campus plumbing technician team with replacement PVC fittings."
+      },
+      {
+        "id": "hist-1792758881169-mi18",
+        "timestamp": "2026-10-23T12:34:41.169Z",
+        "status": "Resolved",
+        "updatedBy": "Marcus Vance (Facilities Lead)",
+        "role": "staff",
+        "notes": "Work verified and completed by senior campus technician."
+      }
+    ],
+    "trackedBy": [
+      "stu_emma_99"
+    ],
+    "isSafetyHazard": false,
+    "isDemo": false,
+    "notesThread": [
+      {
+        "id": "note-1792758881168-lsfg",
+        "author": "Marcus Vance (Facilities Lead)",
+        "role": "staff",
+        "timestamp": "2026-10-23T12:34:41.168Z",
+        "message": "Plumbing crew on site at 09:30 AM; isolated isolation valve; replacing compromised rubber seal."
+      }
+    ],
+    "resolutionNotes": "Replaced degraded P-trap compression gasket on sink #3. Pressure tested lines at 50 PSI for 15 minutes. No further leakage detected. Area sanitized and dried."
+  },
+  {
     "ticketId": "TKT-DEMO-001",
     "reporterId": "stu_sarah_m",
     "reporterName": "Sarah Miller (Sophomore)",

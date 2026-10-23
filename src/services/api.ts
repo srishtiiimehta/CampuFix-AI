@@ -1,4 +1,4 @@
-import { Ticket, AnalysisResult, DuplicateMatch, TicketCategory, TicketPriority, TicketStatus } from '../types/ticket';
+import { Ticket, AnalysisResult, DuplicateMatch, TicketCategory, TicketPriority, TicketStatus, DepartmentName } from '../types/ticket';
 
 export async function fetchTickets(params: {
   search?: string;
@@ -73,6 +73,8 @@ export async function updateTicketStatus(
     role: 'staff';
     notes: string;
     resolutionNotes?: string;
+    assignedDepartment?: DepartmentName;
+    staffNote?: string;
   }
 ): Promise<Ticket> {
   const res = await fetch(`/api/tickets/${encodeURIComponent(ticketId)}/status`, {
@@ -84,6 +86,29 @@ export async function updateTicketStatus(
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error || 'Failed to update ticket status');
+  }
+  const json = await res.json();
+  return json.ticket;
+}
+
+export async function updateTicketDepartment(
+  ticketId: string,
+  payload: {
+    department: DepartmentName;
+    updatedBy: string;
+    role: 'staff';
+    notes?: string;
+  }
+): Promise<Ticket> {
+  const res = await fetch(`/api/tickets/${encodeURIComponent(ticketId)}/department`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to update ticket department');
   }
   const json = await res.json();
   return json.ticket;

@@ -12,9 +12,10 @@ import {
   Send, 
   Users, 
   Camera, 
-  ShieldCheck,
-  FileText,
-  Cpu
+  ShieldCheck, 
+  FileText, 
+  Cpu,
+  RotateCcw
 } from 'lucide-react';
 
 interface TicketTrackingViewProps {
@@ -25,6 +26,8 @@ interface TicketTrackingViewProps {
   onAddNote: (ticketId: string, message: string) => void;
   isAddingNote: boolean;
   onOpenStaffControls?: () => void;
+  onRefreshTicket?: () => void;
+  isRefreshing?: boolean;
 }
 
 export const TicketTrackingView: React.FC<TicketTrackingViewProps> = ({
@@ -35,6 +38,8 @@ export const TicketTrackingView: React.FC<TicketTrackingViewProps> = ({
   onAddNote,
   isAddingNote,
   onOpenStaffControls,
+  onRefreshTicket,
+  isRefreshing,
 }) => {
   const [newNote, setNewNote] = useState('');
 
@@ -57,7 +62,7 @@ export const TicketTrackingView: React.FC<TicketTrackingViewProps> = ({
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Top Navigation */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <button
           onClick={onBack}
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors p-1 cursor-pointer"
@@ -66,15 +71,29 @@ export const TicketTrackingView: React.FC<TicketTrackingViewProps> = ({
           <span>Back to Dashboard</span>
         </button>
 
-        {currentUserRole === 'staff' && onOpenStaffControls && (
-          <button
-            onClick={onOpenStaffControls}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
-            <span>Open Staff Resolution Controls</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {onRefreshTicket && (
+            <button
+              onClick={onRefreshTicket}
+              disabled={isRefreshing}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg shadow-2xs transition-colors cursor-pointer disabled:opacity-60"
+              title="Fetch latest ticket status from server"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>{isRefreshing ? 'Refreshing...' : 'Refresh Status'}</span>
+            </button>
+          )}
+
+          {currentUserRole === 'staff' && onOpenStaffControls && (
+            <button
+              onClick={onOpenStaffControls}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
+              <span>Open Staff Resolution Controls</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Main Ticket Card Header */}

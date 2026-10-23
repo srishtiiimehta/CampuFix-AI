@@ -1,8 +1,15 @@
 import fs from 'fs';
 import path from 'path';
 import { CATEGORY_DEPARTMENT_MAP } from '../src/types/ticket.ts';
-import type { Ticket, TicketStatus, TicketCategory, StatusHistoryItem } from '../src/types/ticket.ts';
+import type { Ticket, TicketStatus, TicketCategory, StatusHistoryItem, DepartmentName } from '../src/types/ticket.ts';
 import { INITIAL_DEMO_TICKETS } from './demoData.ts';
+
+const VALID_DEPARTMENTS: DepartmentName[] = [
+  'Plumbing / Water Maintenance',
+  'Electrical Maintenance',
+  'Housekeeping / Sanitation',
+  'IT / Network Support',
+];
 
 const DATA_DIR = path.resolve(process.cwd(), 'data');
 const DATA_FILE = path.join(DATA_DIR, 'tickets.json');
@@ -149,6 +156,45 @@ class TicketDataStore {
       updatedBy,
       role,
       notes: notes || `Status updated to ${newStatus}`
+    };
+
+    ticket.statusHistory.push(historyItem);
+    this.saveToFile();
+    return ticket;
+  }
+
+  public updateDepartment(
+    ticketId: string,
+    newDepartment: DepartmentName,
+    updatedBy: string,
+    role: 'staff' | 'student' | 'system',
+    notes?: string
+  ): Ticket {
+    const ticket = this.getById(ticketId);
+    if (!ticket) {
+      throw new Error(`Ticket not found: ${ticketId}`);
+    }
+
+    if (role !== 'staff' && role !== 'system') {
+      throw new Error('Security Violation: Only authorized campus staff may reassign ticket departments.');
+    }
+
+    if (!VALID_DEPARTMENTS.includes(newDepartment)) {
+      throw new Error(`Invalid department: ${newDepartment}. Must be one of: ${VALID_DEPARTMENTS.join(', ')}`);
+    }
+
+    const previousDepartment = ticket.assignedDepartment;
+    const now = new Date().toISOString();
+    ticket.assignedDepartment = newDepartment;
+    ticket.updatedAt = now;
+
+    const historyItem: StatusHistoryItem = {
+      id: `hist-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      timestamp: now,
+      status: ticket.status,
+      updatedBy,
+      role: 'staff',
+      notes: notes || `Assigned department updated from "${previousDepartment}" to "${newDepartment}"`,
     };
 
     ticket.statusHistory.push(historyItem);

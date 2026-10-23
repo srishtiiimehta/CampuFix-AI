@@ -142,12 +142,13 @@ async function startServer() {
   // PATCH update ticket status (Staff only)
   app.patch('/api/tickets/:id/status', (req, res) => {
     try {
-      const { status, updatedBy, role, notes, resolutionNotes } = req.body;
+      const { status, updatedBy, role, notes, resolutionNotes, assignedDepartment, staffNote } = req.body;
 
       if (!status || !['Open', 'In Progress', 'Resolved'].includes(status)) {
         return res.status(400).json({ success: false, error: 'Invalid or missing status' });
       }
 
+      // Strict server-side authorization: Reject non-staff requests
       if (role !== 'staff') {
         return res.status(403).json({
           success: false,
@@ -162,13 +163,65 @@ async function startServer() {
         });
       }
 
-      const ticket = dataStore.updateStatus(
+      // Update status in data store
+      let ticket = dataStore.updateStatus(
         req.params.id,
         status as TicketStatus,
         updatedBy || 'Campus Facility Staff',
         'staff',
         notes || `Status transitioned to ${status}`,
         resolutionNotes
+      );
+
+      // Reassign department if staff requested department change
+      if (assignedDepartment && assignedDepartment !== ticket.assignedDepartment) {
+        ticket = dataStore.updateDepartment(
+          req.params.id,
+          assignedDepartment,
+          updatedBy || 'Campus Facility Staff',
+          'staff',
+          `Department reassigned to ${assignedDepartment} along with status transition to ${status}.`
+        );
+      }
+
+      // Add staff note if provided
+      if (staffNote && staffNote.trim().length > 0) {
+        ticket = dataStore.addThreadNote(
+          req.params.id,
+          updatedBy || 'Campus Facility Staff',
+          'staff',
+          staffNote.trim()
+        );
+      }
+
+      res.json({ success: true, ticket });
+    } catch (err: any) {
+      res.status(400).json({ success: false, error: err.message });
+    }
+  });
+
+  // PATCH reassign department (Staff only)
+  app.patch('/api/tickets/:id/department', (req, res) => {
+    try {
+      const { department, updatedBy, role, notes } = req.body;
+
+      if (role !== 'staff') {
+        return res.status(403).json({
+          success: false,
+          error: 'Security Violation: Only authorized campus staff may reassign ticket departments.',
+        });
+      }
+
+      if (!department) {
+        return res.status(400).json({ success: false, error: 'Missing department parameter.' });
+      }
+
+      const ticket = dataStore.updateDepartment(
+        req.params.id,
+        department,
+        updatedBy || 'Campus Facility Staff',
+        'staff',
+        notes
       );
 
       res.json({ success: true, ticket });
