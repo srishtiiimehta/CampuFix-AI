@@ -128,15 +128,29 @@ export async function addTicketNote(
   return json.ticket;
 }
 
+export const CAMPUS_LOCATIONS = [
+  'Main Library',
+  'Science Complex A',
+  'Science Complex B',
+  'Engineering Hall',
+  'Student Center',
+  'West Hostel',
+  'North Dormitory',
+  'Campus Cafeteria',
+  'Recreation & Sports Center',
+  'Administrative Quad',
+];
+
 export async function analyzeWithGemini(
   complaint: string,
   image?: { base64: string; mimeType: string } | null,
-  conversationHistory?: { role: 'user' | 'assistant'; content: string }[]
+  conversationHistory?: { role: 'user' | 'assistant'; content: string }[],
+  validLocations: string[] = CAMPUS_LOCATIONS
 ): Promise<AnalysisResult> {
   const res = await fetch('/api/gemini/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ complaint, image, conversationHistory }),
+    body: JSON.stringify({ complaint, image, conversationHistory, validLocations }),
   });
 
   if (!res.ok) {

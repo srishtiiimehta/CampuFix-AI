@@ -14,7 +14,8 @@ import {
   Camera,
   Cpu,
   ShieldAlert,
-  AlertTriangle
+  AlertTriangle,
+  AlertCircle
 } from 'lucide-react';
 
 interface TicketReviewCardProps {
@@ -288,7 +289,18 @@ export const TicketReviewCard: React.FC<TicketReviewCardProps> = ({
               <HazardNotice warning={analysis.safetyWarning} />
             )}
 
-            {/* 3. Human Review Notice */}
+            {/* 3. Urgent Human Review Flag */}
+            {analysis.requiresHumanReview && !analysis.isSafetyHazard && (
+              <div className="flex items-start gap-2.5 p-3 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs leading-relaxed">
+                <AlertCircle className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold text-indigo-950">Staff Review Flagged: </span>
+                  This issue requires human coordinator assessment prior to standard automated technician dispatch.
+                </div>
+              </div>
+            )}
+
+            {/* 4. Human Facility Review Standard Notice */}
             <div className="flex items-start gap-2.5 p-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-xs leading-relaxed">
               <ShieldAlert className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
               <div>

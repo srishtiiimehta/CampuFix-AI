@@ -46,6 +46,8 @@ export interface Ticket {
   visualObservations: string[];
   aiInferences: string[];
   missingInformation?: string;
+  clarificationQuestion?: string;
+  requiresHumanReview?: boolean;
   status: TicketStatus;
   createdAt: string;
   updatedAt: string;
@@ -79,16 +81,19 @@ export interface AnalysisResult {
   assignedDepartment: DepartmentName;
   issueSummary: string;
   reportedLocation: string;
+  reportedTime: string;
   priority: TicketPriority;
   imageObservations: string;
+  missingInformation: string;
+  clarificationQuestion?: string;
+  requiresHumanReview: boolean;
+  isMissingEssentialInfo: boolean;
+  missingFields: string[];
   studentProvidedFacts: string[];
   visualObservations: string[];
   aiInferences: string[];
   isSafetyHazard: boolean;
   safetyWarning?: string;
-  isMissingEssentialInfo: boolean;
-  missingFields: string[];
-  clarificationQuestion?: string;
 }
 
 export interface DuplicateMatch {

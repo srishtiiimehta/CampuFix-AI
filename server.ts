@@ -210,13 +210,18 @@ async function startServer() {
   // POST analyze complaint with Gemini
   app.post('/api/gemini/analyze', async (req, res) => {
     try {
-      const { complaint, image, conversationHistory } = req.body;
+      const { complaint, image, conversationHistory, validLocations } = req.body;
 
       if (!complaint && !image) {
         return res.status(400).json({ success: false, error: 'Please provide complaint text or a photograph' });
       }
 
-      const result = await analyzeStudentComplaint(complaint || '', image, conversationHistory || []);
+      const result = await analyzeStudentComplaint(
+        complaint || '',
+        image,
+        conversationHistory || [],
+        validLocations
+      );
       res.json({ success: true, result });
     } catch (err: any) {
       console.error('Error in /api/gemini/analyze:', err);
