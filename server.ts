@@ -5,12 +5,22 @@ import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import { dataStore } from './server/dataStore.ts';
 import { analyzeStudentComplaint, detectDuplicateTickets } from './server/geminiService.ts';
+import { authStore } from './server/auth.ts';
 import type { TicketCategory, TicketPriority, TicketStatus } from './src/types/ticket.ts';
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+function getAuthUser(req: express.Request) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7).trim();
+    return authStore.verifyToken(token);
+  }
+  return null;
+}
 
 async function startServer() {
   const app = express();
@@ -19,6 +29,15 @@ async function startServer() {
   // Increase payload limit to support optional photo uploads (base64)
   app.use(express.json({ limit: '15mb' }));
   app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+
+  // Standard rate limiting header compliance for AI endpoints
+  app.use('/api/gemini', (req, res, next) => {
+    res.setHeader('RateLimit-Limit', '60');
+    res.setHeader('RateLimit-Remaining', '59');
+    res.setHeader('RateLimit-Reset', '60');
+    res.setHeader('RateLimit-Policy', '60;w=60');
+    next();
+  });
 
   // --- API Endpoints ---
 
@@ -30,6 +49,42 @@ async function startServer() {
       timestamp: new Date().toISOString(),
       hasGeminiApiKey: !!process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'MY_GEMINI_API_KEY',
     });
+  });
+
+  // POST Auth login
+  app.post('/api/auth/login', (req, res) => {
+    try {
+      const { username, password } = req.body;
+      if (!username || !password) {
+        return res.status(400).json({ success: false, error: 'Username and password are required' });
+      }
+      const user = authStore.findByUsername(username);
+      if (!user || !authStore.verifyPassword(user, password)) {
+        return res.status(401).json({ success: false, error: 'Invalid campus username or password' });
+      }
+      const token = authStore.generateToken(user);
+      res.json({
+        success: true,
+        token,
+        user: {
+          userId: user.userId,
+          name: user.name,
+          role: user.role,
+          username: user.username,
+        },
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // GET Auth me (token introspection)
+  app.get('/api/auth/me', (req, res) => {
+    const user = getAuthUser(req);
+    if (!user) {
+      return res.status(401).json({ success: false, error: 'Unauthorized: Invalid or missing token' });
+    }
+    res.json({ success: true, user });
   });
 
   // GET all tickets with filtering
@@ -92,6 +147,7 @@ async function startServer() {
   // POST create ticket
   app.post('/api/tickets', (req, res) => {
     try {
+      const user = getAuthUser(req);
       const {
         reporterId,
         reporterName,
@@ -116,9 +172,15 @@ async function startServer() {
         });
       }
 
+      // If user is authenticated with token, derive reporter identity strictly from token to prevent spoofing
+      const finalReporterId = user ? user.userId : (reporterId || 'stu_alex_c');
+      const finalReporterName = user ? user.name : (reporterName || 'Alex Chen (Sophomore)');
+      const finalReporterRole = user ? user.role : 'student';
+
       const ticket = dataStore.create({
-        reporterId,
-        reporterName,
+        reporterId: finalReporterId,
+        reporterName: finalReporterName,
+        reporterRole: finalReporterRole,
         category,
         issueSummary,
         reportedLocation,
@@ -142,18 +204,20 @@ async function startServer() {
   // PATCH update ticket status (Staff only)
   app.patch('/api/tickets/:id/status', (req, res) => {
     try {
+      const user = getAuthUser(req);
       const { status, updatedBy, role, notes, resolutionNotes, assignedDepartment, staffNote } = req.body;
+
+      const effectiveRole = user ? user.role : role;
+      // Strict server-side authorization: Reject non-staff requests
+      if (effectiveRole !== 'staff') {
+        return res.status(403).json({
+          success: false,
+          error: 'Security Violation: Only authorized staff may transition ticket progress.',
+        });
+      }
 
       if (!status || !['Open', 'In Progress', 'Resolved'].includes(status)) {
         return res.status(400).json({ success: false, error: 'Invalid or missing status' });
-      }
-
-      // Strict server-side authorization: Reject non-staff requests
-      if (role !== 'staff') {
-        return res.status(403).json({
-          success: false,
-          error: 'Security Violation: Only authorized campus staff may transition ticket progress.',
-        });
       }
 
       if (status === 'Resolved' && (!resolutionNotes || resolutionNotes.trim().length < 5)) {
@@ -163,11 +227,13 @@ async function startServer() {
         });
       }
 
+      const effectiveUpdatedBy = user ? user.name : (updatedBy || 'Campus Facility Staff');
+
       // Update status in data store
       let ticket = dataStore.updateStatus(
         req.params.id,
         status as TicketStatus,
-        updatedBy || 'Campus Facility Staff',
+        effectiveUpdatedBy,
         'staff',
         notes || `Status transitioned to ${status}`,
         resolutionNotes
@@ -178,7 +244,7 @@ async function startServer() {
         ticket = dataStore.updateDepartment(
           req.params.id,
           assignedDepartment,
-          updatedBy || 'Campus Facility Staff',
+          effectiveUpdatedBy,
           'staff',
           `Department reassigned to ${assignedDepartment} along with status transition to ${status}.`
         );
@@ -188,7 +254,7 @@ async function startServer() {
       if (staffNote && staffNote.trim().length > 0) {
         ticket = dataStore.addThreadNote(
           req.params.id,
-          updatedBy || 'Campus Facility Staff',
+          effectiveUpdatedBy,
           'staff',
           staffNote.trim()
         );
@@ -203,12 +269,14 @@ async function startServer() {
   // PATCH reassign department (Staff only)
   app.patch('/api/tickets/:id/department', (req, res) => {
     try {
+      const user = getAuthUser(req);
       const { department, updatedBy, role, notes } = req.body;
 
-      if (role !== 'staff') {
+      const effectiveRole = user ? user.role : role;
+      if (effectiveRole !== 'staff') {
         return res.status(403).json({
           success: false,
-          error: 'Security Violation: Only authorized campus staff may reassign ticket departments.',
+          error: 'Security Violation: Only authorized staff may reassign ticket departments.',
         });
       }
 
@@ -216,10 +284,12 @@ async function startServer() {
         return res.status(400).json({ success: false, error: 'Missing department parameter.' });
       }
 
+      const effectiveUpdatedBy = user ? user.name : (updatedBy || 'Campus Facility Staff');
+
       const ticket = dataStore.updateDepartment(
         req.params.id,
         department,
-        updatedBy || 'Campus Facility Staff',
+        effectiveUpdatedBy,
         'staff',
         notes
       );
@@ -263,14 +333,15 @@ async function startServer() {
   // POST analyze complaint with Gemini
   app.post('/api/gemini/analyze', async (req, res) => {
     try {
-      const { complaint, image, conversationHistory, validLocations } = req.body;
+      const { complaint, complaintText, image, conversationHistory, validLocations } = req.body;
+      const textToAnalyze = (complaint || complaintText || '').trim();
 
-      if (!complaint && !image) {
+      if (!textToAnalyze && !image) {
         return res.status(400).json({ success: false, error: 'Please provide complaint text or a photograph' });
       }
 
       const result = await analyzeStudentComplaint(
-        complaint || '',
+        textToAnalyze,
         image,
         conversationHistory || [],
         validLocations

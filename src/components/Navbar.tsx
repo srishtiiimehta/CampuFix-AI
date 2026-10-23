@@ -18,11 +18,15 @@ export type ActivePage =
   | 'ticket_tracking' 
   | 'staff_dashboard';
 
-interface NavbarProps {
+export type UserRole = 'student' | 'staff';
+
+export interface NavbarProps {
   activePage: ActivePage;
   setActivePage: (page: ActivePage) => void;
-  currentUser: AuthUser;
-  onLogout: () => void;
+  currentUser?: AuthUser | null;
+  userRole?: UserRole;
+  setUserRole?: (role: UserRole) => void;
+  onLogout?: () => void;
   onResetDemoData: () => void;
   isResetting: boolean;
   selectedTicketId: string | null;
@@ -32,12 +36,16 @@ export const Navbar: React.FC<NavbarProps> = ({
   activePage,
   setActivePage,
   currentUser,
+  userRole = 'student',
+  setUserRole,
   onLogout,
   onResetDemoData,
   isResetting,
   selectedTicketId,
 }) => {
-  const isStaff = currentUser.role === 'staff';
+  const currentRole = currentUser?.role || userRole;
+  const isStaff = currentRole === 'staff';
+  const displayName = currentUser?.name ? currentUser.name.split(' (')[0] : (isStaff ? 'Marcus Vance' : 'Alex Chen');
 
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
@@ -132,7 +140,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>{isResetting ? 'Resetting...' : 'Reset Records'}</span>
             </button>
 
-            {/* Authenticated User Pill */}
+            {/* Authenticated User Pill with Role Switcher */}
             <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg border border-slate-200 text-xs">
               <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 bg-white shadow-xs">
                 {isStaff ? (
@@ -143,23 +151,39 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
               <div className="text-left">
                 <div className="font-semibold text-slate-900 leading-tight">
-                  {currentUser.name.split(' (')[0]}
+                  {displayName}
                 </div>
                 <div className="text-[10px] text-slate-500 font-mono uppercase tracking-wider">
-                  {currentUser.role}
+                  {currentRole}
                 </div>
               </div>
+              {setUserRole && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextRole = isStaff ? 'student' : 'staff';
+                    setUserRole(nextRole);
+                    setActivePage(nextRole === 'staff' ? 'staff_dashboard' : 'student_dashboard');
+                  }}
+                  title={`Switch to ${isStaff ? 'Student' : 'Staff'} view`}
+                  className="ml-1 text-[10px] font-semibold text-teal-700 hover:text-teal-900 bg-white hover:bg-teal-50 px-1.5 py-0.5 rounded border border-slate-200 transition-colors cursor-pointer"
+                >
+                  Switch
+                </button>
+              )}
             </div>
 
             {/* Logout Button */}
-            <button
-              onClick={onLogout}
-              title="Sign out of CampusFix AI"
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-md transition-colors cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Sign Out</span>
-            </button>
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                title="Sign out of CampusFix AI"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-md transition-colors cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

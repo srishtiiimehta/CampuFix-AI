@@ -18,7 +18,11 @@ import {
   addTicketNote, 
   analyzeWithGemini, 
   checkDuplicatesWithGemini, 
-  resetDemoData 
+  resetDemoData,
+  login,
+  logout,
+  fetchCurrentUser,
+  AuthUser
 } from './services/api';
 import { Navbar, ActivePage, UserRole } from './components/Navbar';
 import { StudentDashboard } from './components/StudentDashboard';
@@ -30,15 +34,22 @@ import { TicketTrackingView } from './components/TicketTrackingView';
 import { StaffDashboard } from './components/StaffDashboard';
 import { StaffTicketDetailModal } from './components/StaffTicketDetailModal';
 import { E2ETestModal } from './components/E2ETestModal';
+import { LoginScreen } from './components/LoginScreen';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function App() {
   // Navigation & User Session State
   const [activePage, setActivePage] = useState<ActivePage>('student_dashboard');
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => ({
+    userId: 'stu_alex_c',
+    name: 'Alex Chen (Sophomore)',
+    role: 'student',
+    username: 'alex',
+  }));
   const [userRole, setUserRole] = useState<UserRole>('student');
-  const currentStudentId = 'stu_alex_c';
-  const currentStudentName = 'Alex Chen (Sophomore)';
-  const currentStaffName = 'Marcus Vance (Facilities Lead)';
+  const currentStudentId = currentUser?.userId || 'stu_alex_c';
+  const currentStudentName = currentUser?.name || 'Alex Chen (Sophomore)';
+  const currentStaffName = currentUser?.role === 'staff' ? currentUser.name : 'Marcus Vance (Facilities Lead)';
 
   // App Data State
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -370,6 +381,45 @@ export default function App() {
     }
   };
 
+  const handleRoleChange = (newRole: UserRole) => {
+    setUserRole(newRole);
+    if (newRole === 'staff') {
+      setCurrentUser({
+        userId: 'staff_marcus_v',
+        name: 'Marcus Vance (Facilities Lead)',
+        role: 'staff',
+        username: 'marcus',
+      });
+      setActivePage('staff_dashboard');
+    } else {
+      setCurrentUser({
+        userId: 'stu_alex_c',
+        name: 'Alex Chen (Sophomore)',
+        role: 'student',
+        username: 'alex',
+      });
+      setActivePage('student_dashboard');
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    setCurrentUser(null);
+  };
+
+  if (!currentUser) {
+    return (
+      <LoginScreen
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          setUserRole(user.role);
+          setActivePage(user.role === 'staff' ? 'staff_dashboard' : 'student_dashboard');
+          showToast(`Welcome back, ${user.name}!`);
+        }}
+      />
+    );
+  }
+
   const selectedTicket = tickets.find((t) => t.ticketId === selectedTicketId);
 
   return (
@@ -378,8 +428,10 @@ export default function App() {
       <Navbar
         activePage={activePage}
         setActivePage={setActivePage}
+        currentUser={currentUser}
         userRole={userRole}
-        setUserRole={setUserRole}
+        setUserRole={handleRoleChange}
+        onLogout={handleLogout}
         onResetDemoData={handleResetDemo}
         isResetting={isResettingDemo}
         selectedTicketId={selectedTicketId}

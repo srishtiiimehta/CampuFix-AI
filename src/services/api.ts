@@ -160,6 +160,8 @@ export async function updateTicketStatus(
     role?: 'staff';
     notes?: string;
     resolutionNotes?: string;
+    assignedDepartment?: DepartmentName;
+    staffNote?: string;
   }
 ): Promise<Ticket> {
   const res = await fetch(`/api/tickets/${encodeURIComponent(ticketId)}/status`, {
