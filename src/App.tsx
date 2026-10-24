@@ -899,11 +899,13 @@ export default function App() {
         <div key={activePage} className="page-transition">
         {/* View 1: Student Dashboard */}
 
-        {activePage === 'student_dashboard' && (
+        {(activePage === 'student_dashboard' || activePage === 'student_history') && (
 
           <StudentDashboard
 
             currentStudentName={currentStudentName}
+
+            historyOnly={activePage === 'student_history'}
 
             tickets={tickets}
 

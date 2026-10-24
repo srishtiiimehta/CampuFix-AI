@@ -20,6 +20,7 @@ interface StudentDashboardProps {
   currentStudentName: string;
   onNewComplaint: () => void;
   onSelectTicket: (ticketId: string) => void;
+  historyOnly?: boolean;
 }
 
 export const StudentDashboard: React.FC<StudentDashboardProps> = ({
@@ -28,6 +29,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   currentStudentName,
   onNewComplaint,
   onSelectTicket,
+  historyOnly = false,
 }) => {
   const [activeTab, setActiveTab] = useState<'my_tickets' | 'tracked_tickets' | 'all_campus'>('my_tickets');
   const [searchQuery, setSearchQuery] = useState('');
@@ -84,6 +86,14 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
   return (
     <div className="space-y-8">
+      {historyOnly && (
+        <div className="rounded-2xl border border-white/20 bg-white/80 p-6 shadow-sm backdrop-blur">
+          <p className="text-xs font-bold uppercase tracking-[.16em] text-teal-700">Your reports</p>
+          <h1 className="mt-2 text-2xl font-extrabold text-slate-900">Complaint history</h1>
+          <p className="mt-1 text-sm text-slate-600">Review every complaint you have submitted, its current status, and staff updates.</p>
+        </div>
+      )}
+      {!historyOnly && <>
       {/* Personalized welcome and campus impact */}
       <ScrollReveal className="student-intro-reveal">
       <section className="space-y-4">
@@ -179,12 +189,13 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
         </div>
       </section>
       </ScrollReveal>
+      </>}
       {/* Ticket List Section with Segmented Tabs and Filters */}
       <ScrollReveal delay={100}>
       <div className="space-y-4">
         <div className="student-filter-row flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           {/* Segmented Tab Controls */}
-          <div className="inline-flex items-center p-1 bg-slate-100 rounded-lg border border-slate-200 student-tabs">
+          {!historyOnly && <div className="inline-flex items-center p-1 bg-slate-100 rounded-lg border border-slate-200 student-tabs">
             <button
               onClick={() => setActiveTab('my_tickets')}
               className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap cursor-pointer ${
@@ -215,7 +226,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             >
               All Campus Issues ({tickets.length})
             </button>
-          </div>
+          </div>}
 
           {/* Search Input */}
           <div className="relative w-full sm:w-72">

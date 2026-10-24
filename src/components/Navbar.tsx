@@ -10,6 +10,7 @@ import type { AuthUser } from '../services/api';
 
 export type ActivePage = 
   | 'student_dashboard' 
+  | 'student_history'
   | 'new_complaint' 
   | 'clarification' 
   | 'review_confirm' 
@@ -90,6 +91,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
 
                 <button
+                  onClick={() => setActivePage('student_history')}
+                  className={`transition-colors whitespace-nowrap py-1 cursor-pointer ${
+                    activePage === 'student_history'
+                      ? 'text-teal-700 font-semibold border-b-2 border-teal-600'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Complaint History
+                </button>
+
+                <button
                   onClick={() => setActivePage('new_complaint')}
                   className={`transition-colors whitespace-nowrap py-1 cursor-pointer ${
                     activePage === 'new_complaint' || 
@@ -134,6 +146,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {!isStaff ? (
               <>
                 <button onClick={() => setActivePage('student_dashboard')} className={activePage === 'student_dashboard' ? 'is-active' : ''}>My Work Orders</button>
+                <button onClick={() => setActivePage('student_history')} className={activePage === 'student_history' ? 'is-active' : ''}>Complaint History</button>
                 <button onClick={() => setActivePage('new_complaint')} className={['new_complaint', 'clarification', 'review_confirm', 'duplicate_review'].includes(activePage) ? 'is-active' : ''}>Report a Defect</button>
               </>
             ) : (
