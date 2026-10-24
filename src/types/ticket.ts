@@ -97,7 +97,7 @@ export interface AnalysisResult {
   analysisSource: 'gemini' | 'fallback';
   fallbackReason?: string;
   reportIntegrity: {
-    verdict: 'genuine' | 'unclear' | 'clearly_fabricated';
+    verdict: 'genuine' | 'unclear' | 'clearly_fabricated' | 'out_of_scope';
     confidence: number;
     evidenceReason: string;
   };

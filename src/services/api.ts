@@ -161,6 +161,8 @@ export async function createTicket(ticketData: {
   requiresHumanReview?: boolean;
   imageUrl?: string;
   relatedTicketId?: string;
+  originalComplaint: string;
+  conversationHistory?: { role: 'user' | 'assistant'; content: string }[];
 }): Promise<Ticket> {
   const res = await fetch('/api/tickets', {
     method: 'POST',

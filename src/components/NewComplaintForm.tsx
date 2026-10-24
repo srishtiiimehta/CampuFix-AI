@@ -125,7 +125,7 @@ export const NewComplaintForm: React.FC<NewComplaintFormProps> = ({
           Okay, what’s broken?
         </h1>
         <p className="text-xs md:text-sm text-slate-500 mt-1">
-          Tell us what’s going on in your own words. CampusFix AI will help route it to the right team.
+          Tell us about a real campus facilities problem. AI blocks clear pranks and unrelated submissions; uncertain reports are sent for staff review.
         </p>
 
         {/* 4 Allowed Categories Banner */}

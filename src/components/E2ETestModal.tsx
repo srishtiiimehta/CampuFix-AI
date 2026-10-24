@@ -114,6 +114,7 @@ export const E2ETestModal: React.FC<E2ETestModalProps> = ({
       const newTicket = await createTicket({
         reporterId: 'stu_emma_99',
         reporterName: 'Emma Watson (Junior)',
+        originalComplaint: 'Water pipe leaking under washbasin in Science Complex B 3rd floor',
         category: 'Plumbing',
         issueSummary: 'Water pipe leaking under washbasin in Science Complex B 3rd floor',
         reportedLocation: 'Science Complex B - Room 302',

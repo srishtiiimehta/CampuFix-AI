@@ -322,6 +322,8 @@ async function startServer() {
         requiresHumanReview,
         imageUrl,
         relatedTicketId,
+        originalComplaint,
+        conversationHistory,
       } = req.body;
 
       if (!issueSummary || !reportedLocation || !category) {
@@ -331,6 +333,30 @@ async function startServer() {
         });
       }
 
+      const campusUser = (req as typeof req & { campusUser?: CampusUser }).campusUser;
+      let mustReview = !!requiresHumanReview;
+      if (campusUser?.role === 'student') {
+        if (typeof originalComplaint !== 'string' || !originalComplaint.trim()) {
+          return res.status(400).json({ success: false, error: 'Please analyze the original complaint before submitting it.' });
+        }
+        const studentMessages = [originalComplaint, ...(Array.isArray(conversationHistory) ? conversationHistory.filter((turn: any) => turn?.role === 'user').map((turn: any) => String(turn.content || '')) : [])].join(' ').toLowerCase();
+        const explicitPrankAdmission = /\b(?:i|we)\s+(?:just\s+)?(?:made|make|invented)\s+(?:this|that|it|the report)\s+up\b|\b(?:this|that|it|the report)\s+(?:is|was)\s+(?:made up|fake|a prank)\b|\b(?:just|only)\s+(?:a\s+)?(?:prank|joke|fake report)\b|\bthere(?: is|'s) no (?:actual|real) (?:issue|problem|leak|damage)\b/.test(studentMessages);
+        if (explicitPrankAdmission) {
+          return res.status(422).json({ success: false, code: 'PRANK_REJECTED', error: 'This report says the issue was made up, so it was not submitted. Only report a real campus facilities issue.' });
+        }
+        const reportText = `Original student report:\n${originalComplaint.trim()}\nProposed ticket summary: ${String(issueSummary)}\nReported campus location: ${String(reportedLocation)}`;
+        const history = Array.isArray(conversationHistory)
+          ? conversationHistory.filter((turn: any) => turn?.role === 'user' || turn?.role === 'assistant').map((turn: any) => ({ role: turn.role, content: String(turn.content || '').slice(0, 2000) }))
+          : [];
+        const integrityCheck = await analyzeStudentComplaint(reportText, null, history);
+        if (integrityCheck.reportIntegrity.verdict === 'out_of_scope' && integrityCheck.reportIntegrity.confidence >= 0.9) {
+          return res.status(422).json({ success: false, code: 'REPORT_OUT_OF_SCOPE', error: 'CampusFix accepts campus facilities concerns only. This submission was not added as a ticket.' });
+        }
+        if (integrityCheck.reportIntegrity.verdict === 'clearly_fabricated' && integrityCheck.reportIntegrity.confidence >= 0.98) {
+          return res.status(422).json({ success: false, code: 'PRANK_REJECTED', error: 'This appears to be a prank or fabricated report, so it was not submitted. Only report a real campus facilities issue.' });
+        }
+        if (integrityCheck.reportIntegrity.verdict === 'unclear' || (integrityCheck.reportIntegrity.verdict === 'out_of_scope' && integrityCheck.reportIntegrity.confidence < 0.9) || integrityCheck.requiresHumanReview) mustReview = true;
+      }
       const ticket = await dataStore.create({
         reporterId: (req as typeof req & { campusUser?: CampusUser }).campusUser?.userId || reporterId,
         reporterName: (req as typeof req & { campusUser?: CampusUser }).campusUser?.name || reporterName,
@@ -344,7 +370,7 @@ async function startServer() {
         aiInferences,
         isSafetyHazard,
         safetyWarning,
-        requiresHumanReview,
+        requiresHumanReview: mustReview,
         imageUrl,
         relatedTicketId,
       });
@@ -500,7 +526,10 @@ async function startServer() {
       const campusUser = (req as typeof req & { campusUser?: CampusUser }).campusUser;
       const studentText = [complaint || '', ...(Array.isArray(conversationHistory) ? conversationHistory.filter((turn: any) => turn?.role === 'user').map((turn: any) => String(turn.content || '')) : [])].join(' ').toLowerCase();
       const explicitFabricationAdmission = /\b(?:i|we)\s+(?:just\s+)?(?:made|make|invented)\s+(?:this|that|it|the report)\s+up\b|\b(?:this|that|it|the report)\s+(?:is|was)\s+(?:made up|fake|a prank)\b|\b(?:just|only)\s+(?:a\s+)?(?:prank|joke|fake report)\b|\bthere(?: is|'s) no (?:actual|real) (?:issue|problem|leak|damage)\b/.test(studentText);
-      if (campusUser?.role === 'student' && result.reportIntegrity.verdict === 'clearly_fabricated' && result.reportIntegrity.confidence >= 0.98 && explicitFabricationAdmission) {
+      if (result.reportIntegrity.verdict === 'out_of_scope' && result.reportIntegrity.confidence >= 0.9) {
+        return res.status(422).json({ success: false, code: 'REPORT_OUT_OF_SCOPE', error: 'CampusFix accepts campus facilities concerns only. Please submit a real maintenance issue.' });
+      }
+      if (campusUser?.role === 'student' && explicitFabricationAdmission && (result.reportIntegrity.verdict === 'clearly_fabricated' || result.analysisSource === 'fallback')) {
         const { url, anonKey, serviceKey } = supabaseConfig();
         const reason = (result.reportIntegrity.evidenceReason || 'Report was classified as an explicit fabrication.').slice(0, 500);
         const flagResponse = await fetch(`${url}/rest/v1/profiles?id=eq.${encodeURIComponent(campusUser.userId)}`, {
@@ -516,8 +545,11 @@ async function startServer() {
         }
         return res.status(403).json({ success: false, code: 'REPORT_FLAGGED', error: 'Warning: your message explicitly says this report was made up. Your account has been flagged for campus staff review and signed out. Contact campus facilities if you believe this is a mistake.' });
       }
+      if (result.reportIntegrity.verdict === 'out_of_scope' && result.reportIntegrity.confidence < 0.9) {
+        result.reportIntegrity = { ...result.reportIntegrity, verdict: 'unclear' };
+      }
       if (result.reportIntegrity.verdict === 'clearly_fabricated' && !explicitFabricationAdmission) {
-        result.reportIntegrity = { verdict: 'unclear', confidence: 0, evidenceReason: 'The text did not contain a clear admission of fabrication; no account flag was applied.' };
+        return res.status(422).json({ success: false, code: 'PRANK_REJECTED', error: 'This appears to be a prank or fabricated report, so it was not submitted. Only report a real campus facilities issue.' });
       }
       if (result.reportIntegrity.verdict === 'unclear') {
         result.requiresHumanReview = true;

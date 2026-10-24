@@ -618,6 +618,10 @@ export default function App() {
 
         reporterName: currentStudentName,
 
+        originalComplaint: complaintText || clarificationMessages.filter((message) => message.role === 'user').map((message) => message.content).join(' '),
+
+        conversationHistory: clarificationMessages.map(({ role, content }) => ({ role, content })),
+
         category: candidateTicketData.category,
 
         issueSummary: candidateTicketData.issueSummary,
