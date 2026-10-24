@@ -13,7 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 
 const __dirname = path.dirname(__filename);
 
-type CampusUser = { userId: string; name: string; role: 'student' | 'staff'; category: string; staffApproved: boolean; email: string };
+type CampusUser = { userId: string; name: string; role: 'student' | 'staff'; category: string; staffApproved: boolean; email: string; isFlagged: boolean; flagReason?: string };
 const STAFF_CATEGORIES = ['Dean', 'Professor', 'Sweeper', 'Plumber', 'Electrician'];
 const STUDENT_CATEGORIES = ['Student', 'CR'];
 
@@ -26,13 +26,13 @@ function supabaseConfig() {
 }
 
 async function getProfile(userId: string, serviceKey: string, url: string): Promise<CampusUser | null> {
-  const response = await fetch(`${url}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=id,full_name,role,category,staff_approved`, {
+  const response = await fetch(`${url}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=id,full_name,role,category,staff_approved,is_flagged,flag_reason`, {
     headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
   });
   if (!response.ok) throw new Error('Could not load the account profile from Supabase. Apply the CampusFix profile migration.');
-  const rows = await response.json() as Array<{ id: string; full_name: string; role: 'student' | 'staff'; category?: string | null; staff_approved?: boolean | null }>;
+  const rows = await response.json() as Array<{ id: string; full_name: string; role: 'student' | 'staff'; category?: string | null; staff_approved?: boolean | null; is_flagged?: boolean | null; flag_reason?: string | null }>;
   const row = rows[0];
-  return row ? { userId: row.id, name: row.full_name, role: row.role, category: row.category || (row.role === 'staff' ? 'Staff' : 'Student'), staffApproved: row.role !== 'staff' || row.staff_approved === true, email: '' } : null;
+  return row ? { userId: row.id, name: row.full_name, role: row.role, category: row.category || (row.role === 'staff' ? 'Staff' : 'Student'), staffApproved: row.role !== 'staff' || row.staff_approved === true, email: '', isFlagged: row.is_flagged === true, flagReason: row.flag_reason || undefined } : null;
 }
 
 async function startServer() {
@@ -66,6 +66,7 @@ async function startServer() {
       }
       const profile = await getProfile(authData.user.id, serviceKey, url);
       if (!profile) return res.status(403).json({ success: false, error: 'Account profile is missing. Contact your administrator.' });
+      if (profile.isFlagged) return res.status(403).json({ success: false, code: 'ACCOUNT_FLAGGED', error: 'This account is flagged for campus staff review. Contact the campus facilities team before signing in.' });
       if (!authData.user.email_confirmed_at) return res.status(403).json({ success: false, error: 'Please confirm your email using the link we sent before signing in.' });
       if (profile.role === 'staff' && !profile.staffApproved) return res.status(403).json({ success: false, error: 'Your staff account is awaiting administrator approval. You can sign in after it is approved.' });
       profile.email = authData.user.email || '';
@@ -155,6 +156,7 @@ async function startServer() {
       const authUser = await authResponse.json() as { id: string; email?: string; email_confirmed_at?: string | null };
       const profile = await getProfile(authUser.id, serviceKey, url);
       if (!profile) return res.status(403).json({ success: false, error: 'Account profile is missing.' });
+      if (profile.isFlagged) return res.status(403).json({ success: false, code: 'ACCOUNT_FLAGGED', error: 'This account is flagged for campus staff review. Contact the campus facilities team.' });
       if (!authUser.email_confirmed_at) return res.status(403).json({ success: false, error: 'Please confirm your email before using CampusFix.' });
       if (profile.role === 'staff' && !profile.staffApproved) return res.status(403).json({ success: false, error: 'Your staff account is awaiting administrator approval.' });
       profile.email = authUser.email || '';
@@ -176,6 +178,7 @@ async function startServer() {
       const authUser = await authResponse.json() as { id: string; email?: string; email_confirmed_at?: string | null };
       const profile = await getProfile(authUser.id, serviceKey, url);
       if (!profile) return res.status(403).json({ success: false, error: 'Account profile is missing.' });
+      if (profile.isFlagged) return res.status(403).json({ success: false, code: 'ACCOUNT_FLAGGED', error: 'This account is flagged for campus staff review. Contact the campus facilities team.' });
       if (!authUser.email_confirmed_at) return res.status(403).json({ success: false, error: 'Please confirm your email before using CampusFix.' });
       if (profile.role === 'staff' && !profile.staffApproved) return res.status(403).json({ success: false, error: 'Your staff account is awaiting administrator approval.' });
       profile.email = authUser.email || '';
@@ -241,6 +244,38 @@ async function startServer() {
       res.json({ success: true, count: tickets.length, tickets });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // Staff-only moderation queue for flagged accounts.
+  app.get('/api/moderation/flags', async (req, res) => {
+    const campusUser = (req as typeof req & { campusUser?: CampusUser }).campusUser;
+    if (campusUser?.role !== 'staff' || !campusUser.staffApproved) return res.status(403).json({ success: false, error: 'Authorized campus staff only.' });
+    try {
+      const { url, serviceKey } = supabaseConfig();
+      const response = await fetch(`${url}/rest/v1/profiles?is_flagged=eq.true&select=id,full_name,flag_reason,flagged_at&order=flagged_at.desc`, { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } });
+      if (!response.ok) throw new Error('Could not load flagged accounts.');
+      const flags = await response.json();
+      res.json({ success: true, flags });
+    } catch (err: any) {
+      res.status(503).json({ success: false, error: err.message || 'Could not load flagged accounts.' });
+    }
+  });
+
+  app.patch('/api/moderation/flags/:userId/clear', async (req, res) => {
+    const campusUser = (req as typeof req & { campusUser?: CampusUser }).campusUser;
+    if (campusUser?.role !== 'staff' || !campusUser.staffApproved) return res.status(403).json({ success: false, error: 'Authorized campus staff only.' });
+    try {
+      const { url, serviceKey } = supabaseConfig();
+      const response = await fetch(`${url}/rest/v1/profiles?id=eq.${encodeURIComponent(req.params.userId)}`, {
+        method: 'PATCH',
+        headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ is_flagged: false, flag_reason: null, flagged_at: null }),
+      });
+      if (!response.ok) throw new Error('Could not clear the account flag.');
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(503).json({ success: false, error: err.message || 'Could not clear account flag.' });
     }
   });
 
@@ -453,6 +488,30 @@ async function startServer() {
         conversationHistory || [],
         validLocations
       );
+      const campusUser = (req as typeof req & { campusUser?: CampusUser }).campusUser;
+      const studentText = [complaint || '', ...(Array.isArray(conversationHistory) ? conversationHistory.filter((turn: any) => turn?.role === 'user').map((turn: any) => String(turn.content || '')) : [])].join(' ').toLowerCase();
+      const explicitFabricationAdmission = /\b(?:i|we)\s+(?:just\s+)?(?:made|make|invented)\s+(?:this|that|it|the report)\s+up\b|\b(?:this|that|it|the report)\s+(?:is|was)\s+(?:made up|fake|a prank)\b|\b(?:just|only)\s+(?:a\s+)?(?:prank|joke|fake report)\b|\bthere(?: is|'s) no (?:actual|real) (?:issue|problem|leak|damage)\b/.test(studentText);
+      if (campusUser?.role === 'student' && result.reportIntegrity.verdict === 'clearly_fabricated' && result.reportIntegrity.confidence >= 0.98 && explicitFabricationAdmission) {
+        const { url, anonKey, serviceKey } = supabaseConfig();
+        const reason = (result.reportIntegrity.evidenceReason || 'Report was classified as an explicit fabrication.').slice(0, 500);
+        const flagResponse = await fetch(`${url}/rest/v1/profiles?id=eq.${encodeURIComponent(campusUser.userId)}`, {
+          method: 'PATCH',
+          headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+          body: JSON.stringify({ is_flagged: true, flag_reason: reason, flagged_at: new Date().toISOString() }),
+        });
+        if (!flagResponse.ok) throw new Error('Could not save the report flag. Apply the CampusFix integrity migration and try again.');
+        const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
+        if (token) {
+          const signOutResponse = await fetch(`${url}/auth/v1/logout?scope=global`, { method: 'POST', headers: { apikey: anonKey, Authorization: `Bearer ${token}` } });
+          if (!signOutResponse.ok) console.warn('[CampusFix] Flag saved; Supabase global sign-out did not complete. Protected requests are blocked while flagged.');
+        }
+        return res.status(403).json({ success: false, code: 'REPORT_FLAGGED', error: 'Warning: your message explicitly says this report was made up. Your account has been flagged for campus staff review and signed out. Contact campus facilities if you believe this is a mistake.' });
+      }
+      if (result.reportIntegrity.verdict === 'clearly_fabricated' && !explicitFabricationAdmission) {
+        result.reportIntegrity = { verdict: 'unclear', confidence: 0, evidenceReason: 'The text did not contain a clear admission of fabrication; no account flag was applied.' };
+        result.requiresHumanReview = true;
+        result.aiInferences.push('Automated integrity check was inconclusive; do not treat the reporter as dishonest without staff review.');
+      }
       res.json({ success: true, result });
     } catch (err: any) {
       console.error('Error in /api/gemini/analyze:', err);

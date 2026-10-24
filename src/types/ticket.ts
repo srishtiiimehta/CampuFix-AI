@@ -96,6 +96,11 @@ export interface AnalysisResult {
   safetyWarning?: string;
   analysisSource: 'gemini' | 'fallback';
   fallbackReason?: string;
+  reportIntegrity: {
+    verdict: 'genuine' | 'unclear' | 'clearly_fabricated';
+    confidence: number;
+    evidenceReason: string;
+  };
 }
 
 export interface DuplicateMatch {

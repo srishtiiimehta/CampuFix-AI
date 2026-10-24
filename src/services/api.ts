@@ -284,7 +284,9 @@ export async function analyzeWithGemini(
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || 'Gemini analysis failed');
+    const error = new Error(data.error || 'Gemini analysis failed');
+    Object.assign(error, { code: data.code });
+    throw error;
   }
   const json = await res.json();
   return json.result;
@@ -322,3 +324,24 @@ export async function resetDemoData(): Promise<Ticket[]> {
   return json.tickets || [];
 }
 
+
+
+export interface FlaggedAccount {
+  id: string;
+  full_name: string;
+  flag_reason: string | null;
+  flagged_at: string | null;
+}
+
+export async function fetchFlaggedAccounts(): Promise<FlaggedAccount[]> {
+  const res = await fetch('/api/moderation/flags', { headers: getHeaders(false) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Could not load flagged accounts.');
+  return data.flags || [];
+}
+
+export async function clearAccountFlag(userId: string): Promise<void> {
+  const res = await fetch(`/api/moderation/flags/${encodeURIComponent(userId)}/clear`, { method: 'PATCH', headers: getHeaders() });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Could not clear account flag.');
+}

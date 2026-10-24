@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { clearAccountFlag, fetchFlaggedAccounts, type FlaggedAccount } from '../services/api';
 import { Ticket, TicketCategory, TicketPriority, TicketStatus, DepartmentName } from '../types/ticket';
 import { StatusBadge, PriorityBadge, CategoryIcon } from './Badge';
 import { ScrollReveal } from './ScrollReveal';
@@ -43,6 +44,10 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
   const [priorityFilter, setPriorityFilter] = useState<TicketPriority | 'All'>('All');
   const [departmentFilter, setDepartmentFilter] = useState<DepartmentName | 'All'>('All');
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'All'>('All');
+  const [flaggedAccounts, setFlaggedAccounts] = useState<FlaggedAccount[]>([]);
+  const [flagQueueError, setFlagQueueError] = useState('');
+  const [clearingFlagId, setClearingFlagId] = useState<string | null>(null);
+  useEffect(() => { fetchFlaggedAccounts().then(setFlaggedAccounts).catch((error) => setFlagQueueError(error.message)); }, []);
   const firstName = currentUserName.trim().split(/\s+/)[0] || 'there';
 
   // Exact metric counts derived directly from live stored ticket data
@@ -186,6 +191,37 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
           </div>
         </div>
       </div>
+      </ScrollReveal>
+
+      <ScrollReveal delay={45}>
+        <section className="bg-rose-50 rounded-xl border border-rose-200 p-5 shadow-xs" aria-labelledby="flagged-accounts-title">
+          <div className="flex items-start justify-between gap-4 mb-3">
+            <div>
+              <h2 id="flagged-accounts-title" className="flex items-center gap-2 text-sm font-bold text-rose-900"><ShieldAlert className="w-4 h-4" />Flagged accounts</h2>
+              <p className="text-xs text-rose-800 mt-1">Review each flag before clearing it. Flagged students cannot sign in.</p>
+            </div>
+            <span className="rounded-full bg-white border border-rose-200 px-2.5 py-1 text-xs font-bold text-rose-800">{flaggedAccounts.length}</span>
+          </div>
+          {flagQueueError ? <p className="text-sm text-rose-800">{flagQueueError}</p> : flaggedAccounts.length === 0 ? <p className="text-sm text-slate-600">No accounts are currently flagged.</p> : (
+            <ul className="divide-y divide-rose-200">
+              {flaggedAccounts.map((account) => <li key={account.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-900">{account.full_name || 'CampusFix student'}</p>
+                  <p className="text-xs text-slate-700 mt-0.5">{account.flag_reason || 'Integrity review requested.'}</p>
+                  {account.flagged_at && <p className="text-[11px] text-slate-500 mt-1">Flagged {new Date(account.flagged_at).toLocaleString()}</p>}
+                </div>
+                <button type="button" disabled={clearingFlagId === account.id} onClick={async () => {
+                  setClearingFlagId(account.id);
+                  try { await clearAccountFlag(account.id); setFlaggedAccounts((items) => items.filter((item) => item.id !== account.id)); }
+                  catch (error) { setFlagQueueError(error instanceof Error ? error.message : 'Could not clear account flag.'); }
+                  finally { setClearingFlagId(null); }
+                }} className="shrink-0 rounded-lg border border-rose-300 bg-white px-3 py-2 text-xs font-semibold text-rose-900 hover:bg-rose-100 disabled:opacity-60">
+                  {clearingFlagId === account.id ? 'Saving…' : 'Clear flag after review'}
+                </button>
+              </li>)}
+            </ul>
+          )}
+        </section>
       </ScrollReveal>
 
       {/* Filters and Search Bar */}

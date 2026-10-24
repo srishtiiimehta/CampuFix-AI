@@ -348,7 +348,15 @@ export default function App() {
 
     } catch (err: any) {
 
-      showToast(err.message || 'Failed to analyze complaint', 'error');
+      if (err?.code === 'REPORT_FLAGGED' || err?.code === 'ACCOUNT_FLAGGED') {
+        logout();
+        setCurrentUser(null);
+        setTickets([]);
+        setActivePage('student_dashboard');
+        window.alert(err.message || 'Your account is flagged for campus staff review and has been signed out.');
+      } else {
+        showToast(err.message || 'Failed to analyze complaint', 'error');
+      }
 
     } finally {
 
