@@ -144,8 +144,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Zone 3: Authenticated User Badge & Logout */}
           <div className="flex items-center gap-3 shrink-0">
-            {/* Quick Demo Reset Button */}
-            <button
+            {/* Resetting the shared demo dataset is restricted to staff. */}
+            {isStaff && <button
               onClick={onResetDemoData}
               disabled={isResetting}
               title="Reset demonstration records"
@@ -153,7 +153,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <RotateCcw className={`w-3.5 h-3.5 ${isResetting ? 'animate-spin' : ''}`} />
               <span>{isResetting ? 'Resetting...' : 'Reset Records'}</span>
-            </button>
+            </button>}
 
             {/* Authenticated User Pill */}
             <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg border border-slate-200 text-xs">
