@@ -176,11 +176,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             {isStaff && <button
               onClick={onResetDemoData}
               disabled={isResetting}
-              title="Reset demonstration records"
+              title="Remove sample complaints while preserving real student reports"
               className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors cursor-pointer"
             >
               <RotateCcw className={`w-3.5 h-3.5 ${isResetting ? 'animate-spin' : ''}`} />
-              <span>{isResetting ? 'Resetting...' : 'Reset Records'}</span>
+              <span>{isResetting ? 'Cleaning...' : 'Remove Demo Data'}</span>
             </button>}
 
             {/* Authenticated User Pill */}

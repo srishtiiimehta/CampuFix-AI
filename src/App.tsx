@@ -273,7 +273,7 @@ export default function App() {
 
       setTickets(refreshed);
 
-      showToast('Demonstration dataset reset to initial state with 4 sample tickets');
+      showToast('Demo records removed. Real student complaints were preserved.');
 
     } catch (err: any) {
 

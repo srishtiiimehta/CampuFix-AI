@@ -334,8 +334,11 @@ async function startServer() {
       }
 
       const campusUser = (req as typeof req & { campusUser?: CampusUser }).campusUser;
+      if (campusUser?.role !== 'student') {
+        return res.status(403).json({ success: false, error: 'Only signed-in student accounts can submit campus complaints.' });
+      }
       let mustReview = !!requiresHumanReview;
-      if (campusUser?.role === 'student') {
+      if (campusUser.role === 'student') {
         if (typeof originalComplaint !== 'string' || !originalComplaint.trim()) {
           return res.status(400).json({ success: false, error: 'Please analyze the original complaint before submitting it.' });
         }
@@ -586,10 +589,10 @@ async function startServer() {
   app.post('/api/demo/reset', async (req, res) => {
     try {
       if ((req as typeof req & { campusUser?: CampusUser }).campusUser?.role !== 'staff') {
-        return res.status(403).json({ success: false, error: 'Only staff can reset demonstration data.' });
+        return res.status(403).json({ success: false, error: 'Only approved staff can remove demo records.' });
       }
       const tickets = await dataStore.resetDemoData();
-      res.json({ success: true, message: 'Demo data reset successfully', tickets });
+      res.json({ success: true, message: 'Demo records removed; real student submissions were preserved.', tickets });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
     }

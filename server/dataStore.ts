@@ -2,7 +2,6 @@ import fs from 'fs';
 import path from 'path';
 import { CATEGORY_DEPARTMENT_MAP } from '../src/types/ticket.ts';
 import type { Ticket, TicketStatus, TicketCategory, StatusHistoryItem, DepartmentName } from '../src/types/ticket.ts';
-import { INITIAL_DEMO_TICKETS } from './demoData.ts';
 
 const VALID_DEPARTMENTS: DepartmentName[] = [
   'Plumbing / Water Maintenance',
@@ -13,6 +12,9 @@ const VALID_DEPARTMENTS: DepartmentName[] = [
 
 const DATA_DIR = path.resolve(process.cwd(), 'data');
 const DATA_FILE = path.join(DATA_DIR, 'tickets.json');
+
+const isRealUserTicket = (ticket: Ticket) =>
+  ticket.isDemo !== true && typeof ticket.reporterId === 'string' && ticket.reporterId.trim() !== '' && ticket.reporterId !== 'student_guest';
 
 class TicketDataStore {
   private tickets: Ticket[] = [];
@@ -37,25 +39,28 @@ class TicketDataStore {
           const response = await fetch(`${supabaseUrl}/rest/v1/campusfix_ticket_records?select=ticket_id,record,updated_at&order=updated_at.desc`, { headers: { apikey: serviceKey } });
           if (!response.ok) throw new Error(`Supabase tickets read failed (${response.status})`);
           const rows = await response.json() as Array<{ record: Ticket }>;
-          if (rows.length) { this.tickets = rows.map((row) => row.record); this.writeLocalFile(); return; }
+          this.tickets = rows.map((row) => row.record).filter(isRealUserTicket);
+          this.writeLocalFile();
+          if (this.tickets.length !== rows.length) await this.saveToFile(true);
+          return;
         } catch (error) { console.error('Supabase tickets unavailable; using local JSON fallback:', error); }
       }
 
       if (fs.existsSync(DATA_FILE)) {
         const raw = fs.readFileSync(DATA_FILE, 'utf-8');
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          this.tickets = parsed;
+        if (Array.isArray(parsed)) {
+          this.tickets = parsed.filter(isRealUserTicket);
           await this.saveToFile();
           return;
         }
       }
-      // Initialize with demo tickets
-      this.tickets = [...INITIAL_DEMO_TICKETS];
+      // Start empty; only reports submitted by authenticated users belong in the live dataset.
+      this.tickets = [];
       await this.saveToFile();
     } catch (err) {
       console.error('Error initializing TicketDataStore:', err);
-      this.tickets = [...INITIAL_DEMO_TICKETS];
+      this.tickets = [];
     }
   }
 
@@ -77,8 +82,9 @@ class TicketDataStore {
     });
     if (!response.ok) throw new Error(`Supabase tickets refresh failed (${response.status})`);
     const rows = await response.json() as Array<{ record: Ticket }>;
-    this.tickets = rows.map((row) => row.record);
+    this.tickets = rows.map((row) => row.record).filter(isRealUserTicket);
     this.writeLocalFile();
+    if (this.tickets.length !== rows.length) await this.saveToFile(true);
   }
 
   private async saveToFile(replaceAll = false) {
@@ -104,14 +110,14 @@ class TicketDataStore {
     await this.ensureReady();
     try { await this.refreshFromSupabase(); }
     catch (error) { console.error('Could not refresh tickets from Supabase; serving current snapshot:', error); }
-    return [...this.tickets];
+    return this.tickets.filter(isRealUserTicket);
   }
 
   public async getById(id: string): Promise<Ticket | undefined> {
     await this.ensureReady();
     try { await this.refreshFromSupabase(); }
     catch (error) { console.error('Could not refresh tickets from Supabase; serving current snapshot:', error); }
-    return this.tickets.find((t) => t.ticketId === id);
+    return this.tickets.find((t) => t.ticketId === id && isRealUserTicket(t));
   }
 
   public async create(newTicketData: Partial<Ticket> & { issueSummary: string; category: TicketCategory; reportedLocation: string }): Promise<Ticket> {
@@ -310,9 +316,9 @@ class TicketDataStore {
 
   public async resetDemoData(): Promise<Ticket[]> {
     await this.ensureReady();
-    this.tickets = [...INITIAL_DEMO_TICKETS];
+    this.tickets = this.tickets.filter(isRealUserTicket);
     await this.saveToFile(true);
-    return this.tickets;
+    return [...this.tickets];
   }
 }
 
