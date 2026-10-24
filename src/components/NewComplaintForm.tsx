@@ -14,6 +14,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { SAMPLE_CAMPUS_PHOTOS, SamplePhotoPreset } from '../services/sampleImages';
+import { ScrollReveal } from './ScrollReveal';
 
 interface NewComplaintFormProps {
   onSubmit: (complaintText: string, imageData?: { base64: string; mimeType: string } | null) => void;
@@ -112,7 +113,7 @@ export const NewComplaintForm: React.FC<NewComplaintFormProps> = ({
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <ScrollReveal className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div className="bg-white rounded-xl border border-slate-200 p-6">
         <div className="flex items-center gap-2 text-xs font-semibold text-teal-700 uppercase tracking-wider">
@@ -302,7 +303,7 @@ export const NewComplaintForm: React.FC<NewComplaintFormProps> = ({
           </button>
         </div>
       </form>
-    </div>
+    </ScrollReveal>
   );
 };
 

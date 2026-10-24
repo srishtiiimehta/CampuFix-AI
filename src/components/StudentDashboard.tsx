@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Ticket, TicketCategory } from '../types/ticket';
 import { StatusBadge, PriorityBadge, CategoryIcon } from './Badge';
+import { ScrollReveal } from './ScrollReveal';
 import { 
   Plus, 
   Search, 
@@ -9,7 +10,8 @@ import {
   Users,
   Compass,
   Wrench,
-  CheckCircle2
+  CheckCircle2,
+  Building2
 } from 'lucide-react';
 
 interface StudentDashboardProps {
@@ -30,6 +32,28 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const [activeTab, setActiveTab] = useState<'my_tickets' | 'tracked_tickets' | 'all_campus'>('my_tickets');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<TicketCategory | 'All'>('All');
+  const heroSceneRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const scene = heroSceneRef.current;
+    if (!scene || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let frame = 0;
+    const updateParallax = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const offset = scene.getBoundingClientRect().top * -0.025;
+        scene.style.setProperty('--parallax-y', `${Math.max(-12, Math.min(12, offset))}px`);
+      });
+    };
+    updateParallax();
+    window.addEventListener('scroll', updateParallax, { passive: true });
+    window.addEventListener('resize', updateParallax);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', updateParallax);
+      window.removeEventListener('resize', updateParallax);
+    };
+  }, []);
   const initials = currentStudentName.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'CF';
 
   // Filtered views
@@ -61,6 +85,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   return (
     <div className="space-y-8">
       {/* Personalized welcome and campus impact */}
+      <ScrollReveal className="student-intro-reveal">
       <section className="space-y-4">
         <div className="student-hero">
           <div className="hero-eyebrow mb-5">CampusFix AI / Your campus, better</div>
@@ -75,9 +100,30 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 <a href="#campus-issues" className="rounded-full border border-white/35 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10">Explore campus issues ↓</a>
               </div>
             </div>
-            <div className="relative z-10 flex shrink-0 items-center gap-3 self-start rounded-2xl border border-white/20 bg-white/10 p-3.5 text-white backdrop-blur-md lg:self-end">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--orange)] text-lg font-extrabold text-[var(--ink)] shadow-sm">{initials}</div>
-              <div><div className="text-sm font-bold">{currentStudentName || 'Student'}</div><div className="mt-0.5 text-xs text-white/70">CampusFix student</div></div>
+            <div className="student-hero-aside">
+              <div ref={heroSceneRef} className="student-hero-scene" aria-hidden="true">
+                <span className="scene-orbit scene-orbit-a" /><span className="scene-orbit scene-orbit-b" />
+                <span className="scene-sphere" />
+                <svg className="scene-building" viewBox="0 0 360 245" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="m34 93 146-65 146 65v111H34V93Z" fill="#E6F0E5" />
+                  <path d="m34 93 146-65 146 65-146 34L34 93Z" fill="#F7F3E9" />
+                  <path d="M34 93 180 127v18L34 111V93Zm146 34 146-34v18l-146 34v-18Z" fill="#A8D4D3" />
+                  <path d="m60 139 120 27 120-27v65H60v-65Z" fill="#C7DCC7" />
+                  <path d="m60 139 120 27v38H60v-65Z" fill="#DDF0E7" />
+                  <path d="m180 166 120-27v65H180v-38Z" fill="#B7D5C5" />
+                  <path d="M158 169h44v43h-44z" fill="#103E32" />
+                  <path d="M76 151h31v24H76zm47 10h23v21h-23zm98 0h23v21h-23zm39-10h27v24h-27z" fill="#A8D4D3" />
+                  <path d="M82 156h19v14H82zm47 15h11v6h-11zm98-5h11v11h-11zm39-10h15v14h-15z" fill="#F7F3E9" />
+                  <path d="M24 212h312" stroke="#F7F3E9" strokeWidth="5" strokeLinecap="round" />
+                </svg>
+                <span className="scene-spark scene-spark-a">✦</span><span className="scene-spark scene-spark-b">✳</span>
+                <div className="scene-note"><span className="scene-note-icon">↗</span><span><b>Better campus, together</b><small>One clear place to start</small></span></div>
+              </div>
+              <div className="student-identity-card">
+                <div className="student-avatar">{initials}</div>
+                <div><div className="text-sm font-bold">{currentStudentName || 'Student'}</div><div className="mt-0.5 text-xs text-white/70">CampusFix student</div></div>
+                <span className="identity-status" aria-label="Signed in" />
+              </div>
             </div>
           </div>
         </div>
@@ -88,7 +134,31 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           <div className="dashboard-stat"><div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-[.14em] text-slate-600">Repairs completed</span><span className="rounded-xl bg-emerald-100 p-2 text-emerald-800"><CheckCircle2 className="h-4 w-4" /></span></div><div className="stat-number mt-4">{resolvedCount}</div><div className="mt-2 text-xs text-slate-500">Repairs completed for your reports</div></div>
         </div>
       </section>
+      </ScrollReveal>
 
+      <ScrollReveal className="workflow-reveal">
+        <section className="workflow-story" aria-labelledby="workflow-title">
+          <div className="workflow-sticky">
+            <span className="workflow-kicker">A simpler way to get things fixed</span>
+            <h2 id="workflow-title">From “something’s wrong” to “all fixed.”</h2>
+            <p>CampusFix keeps the report, the right facilities team, and the latest update connected in one place.</p>
+            <div className="workflow-graphic" aria-hidden="true">
+              <div className="workflow-graphic-orbit" />
+              <div className="workflow-building"><Building2 /></div>
+              <span className="workflow-graphic-spark">✦</span>
+              <span className="workflow-graphic-dot" />
+              <span className="workflow-graphic-label">CAMPUS / CONNECTED</span>
+            </div>
+          </div>
+          <div className="workflow-steps">
+            <article className="workflow-step"><span className="workflow-step-number">01</span><div><h3>Tell us what happened</h3><p>Describe the issue in your own words and add a photo if it helps.</p></div><span className="workflow-step-mark">↗</span></article>
+            <article className="workflow-step"><span className="workflow-step-number">02</span><div><h3>Review the details</h3><p>Check the summary and category before your report becomes a work order.</p></div><span className="workflow-step-mark">✳</span></article>
+            <article className="workflow-step"><span className="workflow-step-number">03</span><div><h3>Follow the progress</h3><p>See the current status, updates, and notes as the facilities team responds.</p></div><span className="workflow-step-mark">✓</span></article>
+          </div>
+        </section>
+      </ScrollReveal>
+
+      <ScrollReveal delay={70}>
       <section id="campus-issues" className="category-showcase space-y-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div><div className="mb-2 text-[10px] font-bold uppercase tracking-[.18em] text-[var(--orange)]">The campus fix list</div><h2>WHAT’S GOING ON?</h2><p className="mt-2 text-sm text-white/70">Pick a lane to see matching campus reports.</p></div>
@@ -108,11 +178,13 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           ))}
         </div>
       </section>
+      </ScrollReveal>
       {/* Ticket List Section with Segmented Tabs and Filters */}
+      <ScrollReveal delay={100}>
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="student-filter-row flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           {/* Segmented Tab Controls */}
-          <div className="inline-flex items-center p-1 bg-slate-100 rounded-lg border border-slate-200">
+          <div className="inline-flex items-center p-1 bg-slate-100 rounded-lg border border-slate-200 student-tabs">
             <button
               onClick={() => setActiveTab('my_tickets')}
               className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap cursor-pointer ${
@@ -199,7 +271,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             {filteredTickets.map((ticket) => (
               <div
                 key={ticket.ticketId}
-                className="bg-white rounded-xl border border-slate-200 p-5 hover:border-slate-300 transition-all hover:shadow-xs group"
+                className="ticket-card bg-white rounded-xl border border-slate-200 p-5 hover:border-slate-300 transition-all hover:shadow-xs group"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   {/* Category & Status */}
@@ -286,6 +358,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </div>
         )}
       </div>
+      </ScrollReveal>
     </div>
   );
 };

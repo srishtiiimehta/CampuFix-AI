@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Ticket } from '../types/ticket';
+import { ScrollReveal } from './ScrollReveal';
 import { StatusBadge, PriorityBadge, CategoryIcon, HazardNotice } from './Badge';
 import { 
   ArrowLeft, 
@@ -60,7 +61,7 @@ export const TicketTrackingView: React.FC<TicketTrackingViewProps> = ({
   const currentStepIndex = ticket.status === 'Open' ? 0 : ticket.status === 'In Progress' ? 1 : 2;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <ScrollReveal className="ticket-tracking max-w-4xl mx-auto space-y-6">
       {/* Top Navigation */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <button
@@ -162,7 +163,7 @@ export const TicketTrackingView: React.FC<TicketTrackingViewProps> = ({
               return (
                 <div
                   key={step.key}
-                  className={`p-3.5 rounded-lg border transition-all ${
+                  className={`ticket-progress-step p-3.5 rounded-lg border transition-all ${
                     isCurrent
                       ? 'bg-white border-teal-500 shadow-xs'
                       : isCompleted
@@ -475,6 +476,6 @@ export const TicketTrackingView: React.FC<TicketTrackingViewProps> = ({
           </button>
         </form>
       </div>
-    </div>
+    </ScrollReveal>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Ticket, TicketCategory, TicketPriority, TicketStatus, DepartmentName } from '../types/ticket';
 import { StatusBadge, PriorityBadge, CategoryIcon } from './Badge';
+import { ScrollReveal } from './ScrollReveal';
 import { 
   Search, 
   Filter, 
@@ -90,7 +91,8 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
   return (
     <div className="space-y-6">
       {/* Staff Header & KPI strip */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 md:p-8 shadow-xs">
+      <ScrollReveal>
+      <div className="staff-overview bg-white rounded-xl border border-slate-200 p-6 md:p-8 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -184,9 +186,11 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
           </div>
         </div>
       </div>
+      </ScrollReveal>
 
       {/* Filters and Search Bar */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4 shadow-xs">
+      <ScrollReveal delay={70}>
+      <div className="staff-filters bg-white rounded-xl border border-slate-200 p-5 space-y-4 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           {/* Search box */}
           <div className="relative flex-1 max-w-lg">
@@ -290,9 +294,11 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
           </div>
         </div>
       </div>
+      </ScrollReveal>
 
       {/* Main Ticket Table Viewport (Clean administrative table with responsive horizontal scroll) */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+      <ScrollReveal delay={110}>
+      <div className="staff-ticket-table bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
         <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-2">
@@ -472,12 +478,13 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
       </div>
 
       {/* Mobile-Friendly Cards for smaller screens when viewport is restricted */}
-      <div className="block md:hidden bg-slate-50 border border-slate-200 rounded-xl p-4 text-center text-xs text-slate-500">
+      <div className="staff-mobile-table-note block md:hidden bg-slate-50 border border-slate-200 rounded-xl p-4 text-center text-xs text-slate-500">
         <p className="font-semibold text-slate-700 mb-1">
           Horizontal scroll enabled for administrative table above
         </p>
         <p>Swipe left/right on table to inspect all columns, or select &quot;Manage&quot; to review full details.</p>
       </div>
+      </ScrollReveal>
     </div>
   );
 };

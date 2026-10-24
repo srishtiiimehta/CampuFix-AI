@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Building2, 
   RotateCcw, 
@@ -40,13 +40,20 @@ export const Navbar: React.FC<NavbarProps> = ({
   isDarkMode,
   onToggleTheme,
 }) => {
+  const [isScrolled, setIsScrolled] = useState(false);
+  useEffect(() => {
+    const updateScroll = () => setIsScrolled(window.scrollY > 12);
+    updateScroll();
+    window.addEventListener('scroll', updateScroll, { passive: true });
+    return () => window.removeEventListener('scroll', updateScroll);
+  }, []);
   const isStaff = currentUser.role === 'staff';
   const initials = currentUser.name.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'U';
 
   return (
-    <header className="campusfix-nav sticky top-0 z-40 bg-white border-b border-slate-200">
+    <header className={`campusfix-nav sticky top-0 z-40 bg-white border-b border-slate-200 ${isScrolled ? 'is-scrolled' : ''}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between gap-4 h-16">
+        <div className="flex flex-wrap items-center justify-between gap-3 min-h-16 py-3">
           {/* Zone 1: Brand Wordmark */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <button
@@ -121,6 +128,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                 Track Ticket
               </button>
             )}
+          </nav>
+
+          <nav className="campusfix-mobile-nav md:hidden order-3 flex w-full items-center gap-2 overflow-x-auto pb-1" aria-label="Main navigation">
+            {!isStaff ? (
+              <>
+                <button onClick={() => setActivePage('student_dashboard')} className={activePage === 'student_dashboard' ? 'is-active' : ''}>My Work Orders</button>
+                <button onClick={() => setActivePage('new_complaint')} className={['new_complaint', 'clarification', 'review_confirm', 'duplicate_review'].includes(activePage) ? 'is-active' : ''}>Report a Defect</button>
+              </>
+            ) : (
+              <button onClick={() => setActivePage('staff_dashboard')} className={activePage === 'staff_dashboard' ? 'is-active' : ''}>Staff Console</button>
+            )}
+            {selectedTicketId && <button onClick={() => setActivePage('ticket_tracking')} className={activePage === 'ticket_tracking' ? 'is-active' : ''}>Track Ticket</button>}
           </nav>
 
           {/* Zone 3: Authenticated User Badge & Logout */}

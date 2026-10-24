@@ -24,21 +24,21 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'sm' })
   switch (status) {
     case 'Open':
       return (
-        <span className={`inline-flex items-center gap-1.5 font-medium rounded-md bg-amber-50 text-amber-800 border border-amber-200 ${padding}`}>
+        <span className={`status-chip status-chip-open inline-flex items-center gap-1.5 font-medium rounded-md bg-amber-50 text-amber-800 border border-amber-200 ${padding}`}>
           <Clock className={isSm ? 'w-3 h-3' : 'w-3.5 h-3.5'} aria-hidden="true" />
           <span>Open</span>
         </span>
       );
     case 'In Progress':
       return (
-        <span className={`inline-flex items-center gap-1.5 font-medium rounded-md bg-cyan-50 text-cyan-800 border border-cyan-200 ${padding}`}>
+        <span className={`status-chip status-chip-active inline-flex items-center gap-1.5 font-medium rounded-md bg-cyan-50 text-cyan-800 border border-cyan-200 ${padding}`}>
           <AlertCircle className={isSm ? 'w-3 h-3' : 'w-3.5 h-3.5'} aria-hidden="true" />
           <span>In Progress</span>
         </span>
       );
     case 'Resolved':
       return (
-        <span className={`inline-flex items-center gap-1.5 font-medium rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 ${padding}`}>
+        <span className={`status-chip status-chip-resolved inline-flex items-center gap-1.5 font-medium rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 ${padding}`}>
           <CheckCircle2 className={isSm ? 'w-3 h-3' : 'w-3.5 h-3.5'} aria-hidden="true" />
           <span>Resolved</span>
         </span>
