@@ -509,8 +509,12 @@ async function startServer() {
       }
       if (result.reportIntegrity.verdict === 'clearly_fabricated' && !explicitFabricationAdmission) {
         result.reportIntegrity = { verdict: 'unclear', confidence: 0, evidenceReason: 'The text did not contain a clear admission of fabrication; no account flag was applied.' };
+      }
+      if (result.reportIntegrity.verdict === 'unclear') {
         result.requiresHumanReview = true;
-        result.aiInferences.push('Automated integrity check was inconclusive; do not treat the reporter as dishonest without staff review.');
+        if (!result.aiInferences.some((inference) => inference.toLowerCase().includes('integrity review'))) {
+          result.aiInferences.push('Integrity review is unclear; staff must verify the report before dispatch. This is not an account flag.');
+        }
       }
       res.json({ success: true, result });
     } catch (err: any) {

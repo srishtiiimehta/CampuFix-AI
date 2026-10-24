@@ -298,6 +298,17 @@ export const TicketReviewCard: React.FC<TicketReviewCardProps> = ({
               </div>
             )}
 
+            {/* Integrity is uncertain: warn the student and require a staff check without penalizing them. */}
+            {analysis.reportIntegrity.verdict === 'unclear' && (
+              <div role="alert" className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-50 border border-amber-300 text-amber-950 text-xs leading-relaxed">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold">Report verification warning: </span>
+                  We could not confidently assess this report from the details provided. Please add clear symptoms and a campus location, and submit only a real facilities issue. Staff review is required before dispatch. An unclear result alone does not flag or sign out your account.
+                </div>
+              </div>
+            )}
+
             {/* 2. Safety Risk Warning */}
             {analysis.isSafetyHazard && (
               <HazardNotice warning={analysis.safetyWarning} />
