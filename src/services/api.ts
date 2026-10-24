@@ -41,6 +41,8 @@ export interface AuthUser {
   userId: string;
   name: string;
   role: 'student' | 'staff';
+  category: string;
+  staffApproved: boolean;
   email: string;
 }
 
@@ -58,11 +60,11 @@ export interface CreateAccountResponse {
   user?: AuthUser;
 }
 
-export async function createAccount(fullName: string, email: string, password: string): Promise<CreateAccountResponse> {
+export async function createAccount(fullName: string, email: string, password: string, role: 'student' | 'staff', category: string): Promise<CreateAccountResponse> {
   const res = await fetch('/api/auth/signup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fullName, email, password }),
+    body: JSON.stringify({ fullName, email, password, role, category }),
   });
 
   const data = await res.json().catch(() => ({}));

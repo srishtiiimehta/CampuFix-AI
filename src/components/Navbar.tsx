@@ -146,7 +146,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {currentUser.name.split(' (')[0]}
                 </div>
                 <div className="text-[10px] text-slate-500 font-mono uppercase tracking-wider">
-                  {currentUser.role}
+                  {currentUser.category || currentUser.role}
                 </div>
               </div>
             </div>

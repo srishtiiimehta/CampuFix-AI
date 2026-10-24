@@ -12,6 +12,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [accountType, setAccountType] = useState<'student' | 'staff'>('student');
+  const [category, setCategory] = useState('Student');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -24,7 +26,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     try {
       if (isSignUp) {
         if (password !== confirmPassword) throw new Error('Passwords do not match.');
-        const response = await createAccount(fullName.trim(), email.trim(), password);
+        const response = await createAccount(fullName.trim(), email.trim(), password, accountType, category);
         if (response.token && response.user) {
           onLoginSuccess(response.user);
         } else {
@@ -64,11 +66,27 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
         <form onSubmit={handleSubmit} className="bg-white py-8 px-6 sm:px-10 shadow-sm border border-slate-200 rounded-2xl space-y-4">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">{isSignUp ? 'Create your student account' : 'Welcome back'}</h2>
-            <p className="mt-1 text-sm text-slate-500">{isSignUp ? 'Sign up with your university email to get started.' : 'Sign in to your university account.'}</p>
+            <h2 className="text-lg font-bold text-slate-900">{isSignUp ? `Create your ${accountType} account` : 'Welcome back'}</h2>
+            <p className="mt-1 text-sm text-slate-500">{isSignUp ? 'Choose your account type and category. Staff access is enabled only after administrator approval.' : 'Sign in to your university account.'}</p>
           </div>
           {errorMessage && <div role="alert" className="flex items-start gap-2.5 p-3.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs"><AlertCircle className="w-4 h-4 shrink-0" /><span>{errorMessage}</span></div>}
           {successMessage && <div role="status" className="p-3.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">{successMessage}</div>}
+          {isSignUp && <div className="space-y-3">
+            <div>
+              <label htmlFor="accountType" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Account type</label>
+              <select id="accountType" value={accountType} onChange={(event) => { const next = event.target.value as 'student' | 'staff'; setAccountType(next); setCategory(next === 'student' ? 'Student' : 'Dean'); }} className="block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                <option value="student">Student</option>
+                <option value="staff">Staff (requires approval)</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="category" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">{accountType === 'staff' ? 'Staff category' : 'Student category'}</label>
+              <select id="category" value={category} onChange={(event) => setCategory(event.target.value)} className="block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                {(accountType === 'staff' ? ['Dean', 'Professor', 'Sweeper', 'Plumber', 'Electrician'] : ['Student', 'CR']).map((option) => <option key={option} value={option}>{option === 'CR' ? 'CR (Class Representative)' : option}</option>)}
+              </select>
+            </div>
+            {accountType === 'staff' && <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3">Staff accounts must confirm their email and be approved by an administrator. Selecting a staff category does not grant staff permissions.</p>}
+          </div>}
           {isSignUp && <div>
             <label htmlFor="fullName" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Full name</label>
             <div className="relative"><UserRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><input id="fullName" name="name" type="text" autoComplete="name" required value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Your name" className="block w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" /></div>

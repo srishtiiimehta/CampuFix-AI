@@ -13,7 +13,9 @@ const __filename = fileURLToPath(import.meta.url);
 
 const __dirname = path.dirname(__filename);
 
-type CampusUser = { userId: string; name: string; role: 'student' | 'staff'; email: string };
+type CampusUser = { userId: string; name: string; role: 'student' | 'staff'; category: string; staffApproved: boolean; email: string };
+const STAFF_CATEGORIES = ['Dean', 'Professor', 'Sweeper', 'Plumber', 'Electrician'];
+const STUDENT_CATEGORIES = ['Student', 'CR'];
 
 function supabaseConfig() {
   const url = process.env.SUPABASE_URL?.replace(/\/$/, '');
@@ -24,13 +26,13 @@ function supabaseConfig() {
 }
 
 async function getProfile(userId: string, serviceKey: string, url: string): Promise<CampusUser | null> {
-  const response = await fetch(`${url}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=id,full_name,role`, {
-    headers: { apikey: serviceKey },
+  const response = await fetch(`${url}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=id,full_name,role,category,staff_approved`, {
+    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
   });
-  if (!response.ok) throw new Error('Could not load the account profile from Supabase.');
-  const rows = await response.json() as Array<{ id: string; full_name: string; role: 'student' | 'staff' }>;
+  if (!response.ok) throw new Error('Could not load the account profile from Supabase. Apply the CampusFix profile migration.');
+  const rows = await response.json() as Array<{ id: string; full_name: string; role: 'student' | 'staff'; category?: string | null; staff_approved?: boolean | null }>;
   const row = rows[0];
-  return row ? { userId: row.id, name: row.full_name, role: row.role, email: '' } : null;
+  return row ? { userId: row.id, name: row.full_name, role: row.role, category: row.category || (row.role === 'staff' ? 'Staff' : 'Student'), staffApproved: row.role !== 'staff' || row.staff_approved === true, email: '' } : null;
 }
 
 async function startServer() {
@@ -54,12 +56,18 @@ async function startServer() {
         method: 'POST', headers: { apikey: anonKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), password }),
       });
-      const authData = await authResponse.json() as { access_token?: string; user?: { id: string; email?: string; phone?: string; user_metadata?: { display_name?: string } }; msg?: string; message?: string };
+      const authData = await authResponse.json() as { access_token?: string; user?: { id: string; email?: string; email_confirmed_at?: string | null; phone?: string; user_metadata?: { display_name?: string } }; msg?: string; message?: string; code?: string };
       if (!authResponse.ok || !authData.access_token || !authData.user) {
-        return res.status(401).json({ success: false, error: authData.msg || authData.message || 'Email or password is incorrect.' });
+        const authError = `${authData.msg || authData.message || ''} ${authData.code || ''}`.toLowerCase();
+        const emailMessage = authError.includes('confirm') || authError.includes('verified') || authError.includes('email_not_confirmed')
+          ? 'Please confirm your email using the link we sent before signing in.'
+          : (authData.msg || authData.message || 'Email or password is incorrect.');
+        return res.status(401).json({ success: false, error: emailMessage });
       }
       const profile = await getProfile(authData.user.id, serviceKey, url);
       if (!profile) return res.status(403).json({ success: false, error: 'Account profile is missing. Contact your administrator.' });
+      if (!authData.user.email_confirmed_at) return res.status(403).json({ success: false, error: 'Please confirm your email using the link we sent before signing in.' });
+      if (profile.role === 'staff' && !profile.staffApproved) return res.status(403).json({ success: false, error: 'Your staff account is awaiting administrator approval. You can sign in after it is approved.' });
       profile.email = authData.user.email || '';
       profile.name = profile.name || authData.user.user_metadata?.display_name || profile.email;
       res.json({ success: true, token: authData.access_token, user: profile });
@@ -71,22 +79,26 @@ async function startServer() {
   app.post('/api/auth/signup', async (req, res) => {
     try {
       const { url, anonKey, serviceKey } = supabaseConfig();
-      const { fullName, email, password } = req.body;
+      const { fullName, email, password, role: requestedRole = 'student', category: requestedCategory } = req.body;
       if (typeof fullName !== 'string' || !fullName.trim() || typeof email !== 'string' || !email.trim() || typeof password !== 'string' || password.length < 8) {
         return res.status(400).json({ success: false, error: 'Enter your name, a valid email, and a password with at least 8 characters.' });
       }
+      if (requestedRole !== 'student' && requestedRole !== 'staff') return res.status(400).json({ success: false, error: 'Choose a valid account type.' });
+      const validCategories = requestedRole === 'staff' ? STAFF_CATEGORIES : STUDENT_CATEGORIES;
+      const category = typeof requestedCategory === 'string' && validCategories.includes(requestedCategory) ? requestedCategory : (requestedRole === 'student' ? 'Student' : '');
+      if (!category) return res.status(400).json({ success: false, error: 'Choose a valid category for this account type.' });
 
       const authResponse = await fetch(`${url}/auth/v1/signup`, {
         method: 'POST',
         headers: { apikey: anonKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password, data: { full_name: fullName.trim() } }),
+        body: JSON.stringify({ email: email.trim(), password, data: { full_name: fullName.trim(), requested_role: requestedRole, category } }),
       });
       const authData = await authResponse.json() as {
         access_token?: string;
         id?: string;
         email?: string;
         user_metadata?: { full_name?: string };
-        user?: { id: string; email?: string; user_metadata?: { full_name?: string } };
+        user?: { id: string; email?: string; email_confirmed_at?: string | null; user_metadata?: { full_name?: string } };
         msg?: string;
         message?: string;
         error?: string;
@@ -103,16 +115,28 @@ async function startServer() {
         const profileResponse = await fetch(`${url}/rest/v1/profiles`, {
           method: 'POST',
           headers: { apikey: serviceKey, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-          body: JSON.stringify({ id: signupUser.id, full_name: fullName.trim(), role: 'student' }),
+          body: JSON.stringify({ id: signupUser.id, full_name: fullName.trim(), role: 'student', category: 'Student', staff_approved: false }),
         });
         if (!profileResponse.ok) throw new Error('The account was created, but its student profile could not be saved. Check that the public.profiles table is available.');
         profile = await getProfile(signupUser.id, serviceKey, url);
       }
-      if (!profile) throw new Error('The account was created, but its student profile could not be loaded.');
+      if (!profile) throw new Error('The account was created, but its profile could not be loaded.');
 
-      if (!authData.access_token) {
-        return res.status(201).json({ success: true, confirmationRequired: true, message: 'Account created. Check your email to confirm it, then sign in.' });
-      }
+      // Public signup can request staff status, but can never approve it. Approval is set only by an administrator.
+      const profileUpdate = await fetch(`${url}/rest/v1/profiles?id=eq.${encodeURIComponent(signupUser.id)}`, {
+        method: 'PATCH',
+        headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ role: requestedRole, category, staff_approved: false }),
+      });
+      if (!profileUpdate.ok) throw new Error('The account was created, but its category could not be saved. Apply the latest Supabase migration.');
+      profile = await getProfile(signupUser.id, serviceKey, url);
+      if (!profile) throw new Error('The account was created, but its profile could not be loaded.');
+
+      const confirmationRequired = !authData.access_token || requestedRole === 'staff';
+      const message = requestedRole === 'staff'
+        ? 'Staff request submitted. Confirm your email, then wait for an administrator to approve your staff account before signing in.'
+        : 'Account created. Check your email to confirm your account, then sign in.';
+      if (confirmationRequired) return res.status(201).json({ success: true, confirmationRequired: true, message });
       profile.email = signupUser.email || email.trim();
       profile.name = profile.name || signupUser.user_metadata?.full_name || fullName.trim();
       res.status(201).json({ success: true, confirmationRequired: false, token: authData.access_token, user: profile });
@@ -128,9 +152,11 @@ async function startServer() {
       if (!token) return res.status(401).json({ success: false, error: 'Sign in required.' });
       const authResponse = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: `Bearer ${token}` } });
       if (!authResponse.ok) return res.status(401).json({ success: false, error: 'Session expired.' });
-      const authUser = await authResponse.json() as { id: string; email?: string };
+      const authUser = await authResponse.json() as { id: string; email?: string; email_confirmed_at?: string | null };
       const profile = await getProfile(authUser.id, serviceKey, url);
       if (!profile) return res.status(403).json({ success: false, error: 'Account profile is missing.' });
+      if (!authUser.email_confirmed_at) return res.status(403).json({ success: false, error: 'Please confirm your email before using CampusFix.' });
+      if (profile.role === 'staff' && !profile.staffApproved) return res.status(403).json({ success: false, error: 'Your staff account is awaiting administrator approval.' });
       profile.email = authUser.email || '';
       res.json({ success: true, user: profile });
     } catch (error) {
@@ -147,9 +173,11 @@ async function startServer() {
       if (!token) return res.status(401).json({ success: false, error: 'Sign in required.' });
       const authResponse = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: `Bearer ${token}` } });
       if (!authResponse.ok) return res.status(401).json({ success: false, error: 'Session expired. Sign in again.' });
-      const authUser = await authResponse.json() as { id: string; email?: string };
+      const authUser = await authResponse.json() as { id: string; email?: string; email_confirmed_at?: string | null };
       const profile = await getProfile(authUser.id, serviceKey, url);
       if (!profile) return res.status(403).json({ success: false, error: 'Account profile is missing.' });
+      if (!authUser.email_confirmed_at) return res.status(403).json({ success: false, error: 'Please confirm your email before using CampusFix.' });
+      if (profile.role === 'staff' && !profile.staffApproved) return res.status(403).json({ success: false, error: 'Your staff account is awaiting administrator approval.' });
       profile.email = authUser.email || '';
       (req as typeof req & { campusUser: CampusUser }).campusUser = profile;
       next();
