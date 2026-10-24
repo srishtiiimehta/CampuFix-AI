@@ -164,6 +164,8 @@ export default function App() {
 
     safetyWarning?: string;
 
+    requiresHumanReview?: boolean;
+
   } | null>(null);
 
   const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
@@ -514,6 +516,8 @@ export default function App() {
 
     safetyWarning?: string;
 
+    requiresHumanReview?: boolean;
+
   }) => {
 
     setCandidateTicketData(confirmedTicket);
@@ -631,6 +635,8 @@ export default function App() {
         aiInferences: candidateTicketData.aiInferences,
 
         isSafetyHazard: candidateTicketData.isSafetyHazard,
+
+        requiresHumanReview: candidateTicketData.requiresHumanReview,
 
         safetyWarning: candidateTicketData.safetyWarning,
 

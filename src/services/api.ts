@@ -158,6 +158,7 @@ export async function createTicket(ticketData: {
   aiInferences: string[];
   isSafetyHazard?: boolean;
   safetyWarning?: string;
+  requiresHumanReview?: boolean;
   imageUrl?: string;
   relatedTicketId?: string;
 }): Promise<Ticket> {

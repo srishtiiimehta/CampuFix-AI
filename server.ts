@@ -312,6 +312,7 @@ async function startServer() {
         aiInferences,
         isSafetyHazard,
         safetyWarning,
+        requiresHumanReview,
         imageUrl,
         relatedTicketId,
       } = req.body;
@@ -336,6 +337,7 @@ async function startServer() {
         aiInferences,
         isSafetyHazard,
         safetyWarning,
+        requiresHumanReview,
         imageUrl,
         relatedTicketId,
       });

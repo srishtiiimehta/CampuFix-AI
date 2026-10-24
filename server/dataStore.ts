@@ -139,6 +139,7 @@ class TicketDataStore {
       trackedBy: [newTicketData.reporterId || 'student_guest'],
       isSafetyHazard: !!newTicketData.isSafetyHazard,
       safetyWarning: newTicketData.safetyWarning,
+      requiresHumanReview: !!newTicketData.requiresHumanReview,
       imageUrl: newTicketData.imageUrl,
       isDemo: false,
       notesThread: []
