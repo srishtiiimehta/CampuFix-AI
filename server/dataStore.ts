@@ -66,6 +66,21 @@ class TicketDataStore {
     } catch (err) { console.error('Error writing tickets to file:', err); }
   }
 
+  /** Refresh the in-memory snapshot so students see staff updates made by other app instances. */
+  private async refreshFromSupabase() {
+    const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, '');
+    const serviceKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !serviceKey) return;
+
+    const response = await fetch(`${supabaseUrl}/rest/v1/campusfix_ticket_records?select=ticket_id,record,updated_at&order=updated_at.desc`, {
+      headers: { apikey: serviceKey },
+    });
+    if (!response.ok) throw new Error(`Supabase tickets refresh failed (${response.status})`);
+    const rows = await response.json() as Array<{ record: Ticket }>;
+    this.tickets = rows.map((row) => row.record);
+    this.writeLocalFile();
+  }
+
   private async saveToFile(replaceAll = false) {
     this.writeLocalFile();
     const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, '');
@@ -87,11 +102,15 @@ class TicketDataStore {
 
   public async getAll(): Promise<Ticket[]> {
     await this.ensureReady();
+    try { await this.refreshFromSupabase(); }
+    catch (error) { console.error('Could not refresh tickets from Supabase; serving current snapshot:', error); }
     return [...this.tickets];
   }
 
   public async getById(id: string): Promise<Ticket | undefined> {
     await this.ensureReady();
+    try { await this.refreshFromSupabase(); }
+    catch (error) { console.error('Could not refresh tickets from Supabase; serving current snapshot:', error); }
     return this.tickets.find((t) => t.ticketId === id);
   }
 

@@ -234,6 +234,31 @@ export default function App() {
 
   }, [loadTickets, currentUser]);
 
+  // Keep a student's complaint list and status history current while staff work on tickets.
+  useEffect(() => {
+    if (!currentUser || currentUser.role !== 'student') return;
+
+    let refreshing = false;
+    const refreshStudentTickets = async () => {
+      if (refreshing || document.visibilityState === 'hidden') return;
+      refreshing = true;
+      try {
+        setTickets(await fetchTickets());
+      } catch (error) {
+        console.error('Could not refresh student complaint history:', error);
+      } finally {
+        refreshing = false;
+      }
+    };
+
+    const interval = window.setInterval(refreshStudentTickets, 8000);
+    window.addEventListener('focus', refreshStudentTickets);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refreshStudentTickets);
+    };
+  }, [currentUser]);
+
 
 
   // Handler: Reset Demo Data

@@ -193,7 +193,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              My Reported Issues ({myTickets.length})
+              Complaint History ({myTickets.length})
             </button>
             <button
               onClick={() => setActiveTab('tracked_tickets')}
@@ -256,7 +256,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
               {searchQuery || selectedCategory !== 'All'
                 ? 'Try broadening your search or resetting category filters.'
-                : 'You have not reported or tracked any campus issues in this view.'}
+                : activeTab === 'my_tickets'
+                  ? 'Your reported complaints will appear here with their latest staff status and update history.'
+                  : 'You have not reported or tracked any campus issues in this view.'}
             </p>
             <button
               onClick={onNewComplaint}
