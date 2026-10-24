@@ -16,6 +16,11 @@ const __dirname = path.dirname(__filename);
 type CampusUser = { userId: string; name: string; role: 'student' | 'staff'; category: string; staffApproved: boolean; email: string; isFlagged: boolean; flagReason?: string };
 const STAFF_CATEGORIES = ['Dean', 'Professor', 'Sweeper', 'Plumber', 'Electrician'];
 const STUDENT_CATEGORIES = ['Student', 'CR'];
+const CAMPUS_EMAIL_DOMAIN = 'zenithschool.ai';
+
+function isCampusEmail(email: string) {
+  return /^[^\s@]+@zenithschool\.ai$/i.test(email.trim());
+}
 
 function supabaseConfig() {
   const url = process.env.SUPABASE_URL?.replace(/\/$/, '');
@@ -52,6 +57,7 @@ async function startServer() {
       if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !password) {
         return res.status(400).json({ success: false, error: 'Enter your email and password.' });
       }
+      if (!isCampusEmail(email)) return res.status(403).json({ success: false, error: `Use your @${CAMPUS_EMAIL_DOMAIN} campus email to sign in.` });
       const authResponse = await fetch(`${url}/auth/v1/token?grant_type=password`, {
         method: 'POST', headers: { apikey: anonKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), password }),
@@ -84,6 +90,7 @@ async function startServer() {
       if (typeof fullName !== 'string' || !fullName.trim() || typeof email !== 'string' || !email.trim() || typeof password !== 'string' || password.length < 8) {
         return res.status(400).json({ success: false, error: 'Enter your name, a valid email, and a password with at least 8 characters.' });
       }
+      if (!isCampusEmail(email)) return res.status(400).json({ success: false, error: `Only @${CAMPUS_EMAIL_DOMAIN} campus email addresses can create an account.` });
       if (requestedRole !== 'student' && requestedRole !== 'staff') return res.status(400).json({ success: false, error: 'Choose a valid account type.' });
       const validCategories = requestedRole === 'staff' ? STAFF_CATEGORIES : STUDENT_CATEGORIES;
       const category = typeof requestedCategory === 'string' && validCategories.includes(requestedCategory) ? requestedCategory : (requestedRole === 'student' ? 'Student' : '');
