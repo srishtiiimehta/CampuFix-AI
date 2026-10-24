@@ -128,7 +128,18 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
-            {selectedTicketId && (
+            {!isStaff ? (
+              <button
+                onClick={() => setActivePage('student_history')}
+                className={`transition-colors whitespace-nowrap py-1 cursor-pointer ${
+                  activePage === 'student_history' || activePage === 'ticket_tracking'
+                    ? 'text-teal-700 font-semibold border-b-2 border-teal-600'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Track a Ticket
+              </button>
+            ) : selectedTicketId ? (
               <button
                 onClick={() => setActivePage('ticket_tracking')}
                 className={`transition-colors whitespace-nowrap py-1 cursor-pointer ${
@@ -139,7 +150,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 Track Ticket
               </button>
-            )}
+            ) : null}
           </nav>
 
           <nav className="campusfix-mobile-nav md:hidden order-3 flex w-full items-center gap-2 overflow-x-auto pb-1" aria-label="Main navigation">
@@ -152,7 +163,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <button onClick={() => setActivePage('staff_dashboard')} className={activePage === 'staff_dashboard' ? 'is-active' : ''}>Staff Console</button>
             )}
-            {selectedTicketId && <button onClick={() => setActivePage('ticket_tracking')} className={activePage === 'ticket_tracking' ? 'is-active' : ''}>Track Ticket</button>}
+            {!isStaff ? (
+              <button onClick={() => setActivePage('student_history')} className={activePage === 'student_history' || activePage === 'ticket_tracking' ? 'is-active' : ''}>Track a Ticket</button>
+            ) : selectedTicketId ? (
+              <button onClick={() => setActivePage('ticket_tracking')} className={activePage === 'ticket_tracking' ? 'is-active' : ''}>Track Ticket</button>
+            ) : null}
           </nav>
 
           {/* Zone 3: Authenticated User Badge & Logout */}
