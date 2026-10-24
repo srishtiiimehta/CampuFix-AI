@@ -317,3 +317,111 @@ html.dark input, html.dark textarea, html.dark select { background-color: var(--
 .ticket-progress-step[class*="border-teal-500"] { box-shadow: 0 8px 22px #103e3212; background: color-mix(in srgb, var(--mint) 35%, var(--paper)) !important; }
 @keyframes active-status-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .62; transform: scale(1.12); } }
 @media (prefers-reduced-motion: reduce) { .status-chip-active svg { animation: none; } }
+
+/* iOS-inspired campus glass surfaces and ambient facilities motion */
+.app-shell {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  background:
+    radial-gradient(ellipse at 8% 10%, color-mix(in srgb, var(--mint) 76%, transparent), transparent 34rem),
+    radial-gradient(ellipse at 92% 22%, color-mix(in srgb, var(--peach) 58%, transparent), transparent 31rem),
+    var(--cream) !important;
+}
+.app-shell::before {
+  content: '';
+  position: fixed;
+  z-index: -1;
+  inset: -24%;
+  pointer-events: none;
+  opacity: .55;
+  filter: blur(38px);
+  background:
+    radial-gradient(ellipse at 19% 37%, color-mix(in srgb, var(--aqua) 46%, transparent) 0 7%, transparent 33%),
+    radial-gradient(ellipse at 76% 24%, color-mix(in srgb, var(--peach) 60%, transparent) 0 8%, transparent 34%),
+    radial-gradient(ellipse at 68% 78%, color-mix(in srgb, var(--mint) 80%, transparent) 0 10%, transparent 38%);
+  animation: campus-ambient-drift 26s ease-in-out infinite alternate;
+}
+.app-shell::after {
+  content: '';
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  opacity: .12;
+  background-image: radial-gradient(color-mix(in srgb, var(--forest) 24%, transparent) .7px, transparent .7px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(130deg, #000 0%, transparent 75%);
+}
+@keyframes campus-ambient-drift {
+  0% { transform: translate3d(-1.2%, -.7%, 0) scale(.98); }
+  100% { transform: translate3d(1.5%, 1.2%, 0) scale(1.035); }
+}
+.campusfix-nav {
+  border-color: color-mix(in srgb, var(--line) 66%, transparent) !important;
+  background: color-mix(in srgb, var(--paper) 74%, transparent) !important;
+  box-shadow: 0 8px 28px rgba(16, 62, 50, .07);
+  backdrop-filter: blur(24px) saturate(1.35);
+  -webkit-backdrop-filter: blur(24px) saturate(1.35);
+}
+.app-shell main form.bg-white,
+.app-shell main > div > .bg-white,
+.dashboard-stat,
+.workflow-story,
+.workflow-step,
+.staff-overview,
+.staff-filters,
+.staff-ticket-table {
+  border-color: color-mix(in srgb, var(--line) 72%, transparent) !important;
+  background: color-mix(in srgb, var(--paper) 78%, transparent) !important;
+  box-shadow: 0 18px 42px rgba(16, 62, 50, .09), inset 0 1px rgba(255,255,255,.65) !important;
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+}
+.dashboard-stat:hover,
+.workflow-step:hover { box-shadow: 0 22px 48px rgba(16, 62, 50, .13) !important; }
+.student-hero {
+  box-shadow: 0 26px 65px rgba(16, 62, 50, .22), inset 0 1px rgba(255,255,255,.18) !important;
+}
+.student-hero::before { animation: hero-glow-breathe 9s ease-in-out infinite alternate; }
+@keyframes hero-glow-breathe { from { transform: translate3d(-1%, -1%, 0) scale(.94); opacity: .78; } to { transform: translate3d(2%, 2%, 0) scale(1.08); opacity: 1; } }
+.login-screen {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 12% 18%, color-mix(in srgb, var(--aqua) 52%, transparent), transparent 35rem),
+    radial-gradient(ellipse at 90% 82%, color-mix(in srgb, var(--peach) 60%, transparent), transparent 33rem),
+    var(--cream) !important;
+}
+.login-screen::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -22%;
+  pointer-events: none;
+  filter: blur(34px);
+  background: radial-gradient(ellipse at 32% 47%, color-mix(in srgb, var(--mint) 75%, transparent) 0 11%, transparent 40%);
+  animation: campus-ambient-drift 22s ease-in-out infinite alternate-reverse;
+}
+.login-layout {
+  border: 1px solid color-mix(in srgb, var(--paper) 78%, transparent) !important;
+  box-shadow: 0 34px 90px rgba(20, 45, 36, .2), inset 0 1px rgba(255,255,255,.7) !important;
+  backdrop-filter: blur(28px) saturate(1.25);
+  -webkit-backdrop-filter: blur(28px) saturate(1.25);
+}
+.login-panel { background: color-mix(in srgb, var(--paper) 78%, transparent) !important; }
+.login-form-card {
+  border-color: color-mix(in srgb, var(--line) 74%, transparent) !important;
+  background: color-mix(in srgb, var(--paper) 68%, transparent) !important;
+  box-shadow: 0 20px 48px rgba(16, 62, 50, .11), inset 0 1px rgba(255,255,255,.72) !important;
+  backdrop-filter: blur(22px) saturate(1.25);
+  -webkit-backdrop-filter: blur(22px) saturate(1.25);
+}
+.art-orbit-one, .art-orbit-two { animation: orbit-drift 34s linear infinite; transform-origin: center; }
+.art-orbit-two { animation-direction: reverse; animation-duration: 42s; }
+@keyframes orbit-drift { to { rotate: 360deg; } }
+@media (prefers-reduced-motion: reduce) {
+  .app-shell::before, .login-screen::before, .student-hero::before,
+  .art-orbit-one, .art-orbit-two { animation: none !important; }
+}
