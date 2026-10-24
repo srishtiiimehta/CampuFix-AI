@@ -318,11 +318,11 @@ export async function resetDemoData(): Promise<Ticket[]> {
     method: 'POST',
     headers: getHeaders(false),
   });
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error('Failed to reset demo data');
+    throw new Error(data.error || `Failed to reset demo data (HTTP ${res.status}).`);
   }
-  const json = await res.json();
-  return json.tickets || [];
+  return data.tickets || [];
 }
 
 
